@@ -16,7 +16,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 w-full bg-white border-t shadow-md flex justify-around py-2 z-50">
-      <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
+      <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}
         🏠<span className="text-xs">Inicio</span>
       </Link>
       <Link to="/perfil" className={`flex flex-col items-center ${isActive("/perfil")}`}>
