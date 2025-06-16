@@ -1,11 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
-
-const Home = () => (
-  <div className="p-6 pb-24">
-    <h1 className="text-xl text-pink-600">Inicio</h1>
-  </div>
-);
+import Home from "./Home";
 
 const Perfil = () => (
   <div className="p-6 pb-24">
@@ -20,10 +15,10 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 w-full bg-white border-t shadow-md flex justify-around py-2 z-50">
-      <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
+      <Link to="/" className={\`flex flex-col items-center \${isActive("/")}\`}>
         🏠<span className="text-xs">Inicio</span>
       </Link>
-      <Link to="/perfil" className={`flex flex-col items-center ${isActive("/perfil")}`}>
+      <Link to="/perfil" className={\`flex flex-col items-center \${isActive("/perfil")}\`}>
         👤<span className="text-xs">Perfil</span>
       </Link>
     </nav>
