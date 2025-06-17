@@ -1,7 +1,8 @@
-
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
 import Home from "./Home";
+import Login from "./Login";
+import { auth } from "./firebase";
 
 const Perfil = () => (
   <div className="p-6 pb-24">
@@ -16,7 +17,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 w-full bg-white border-t shadow-md flex justify-around py-2 z-50">
-     <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
+      <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
         🏠<span className="text-xs">Inicio</span>
       </Link>
       <Link to="/perfil" className={`flex flex-col items-center ${isActive("/perfil")}`}>
@@ -27,14 +28,34 @@ const BottomNav = () => {
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      setUser(firebaseUser);
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (checkingAuth) return <div className="p-6">Cargando...</div>;
+
   return (
     <Router>
       <div className="min-h-screen pb-20">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/perfil" element={<Perfil />} />
+          {!user ? (
+            <Route path="*" element={<Login />} />
+          ) : (
+            <>
+              <Route path="/" element={<Home />} />
+              <Route path="/perfil" element={<Perfil />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </>
+          )}
         </Routes>
-        <BottomNav />
+        {user && <BottomNav />}
       </div>
     </Router>
   );
