@@ -1,85 +1,99 @@
-
 import React, { useState, useEffect } from "react";
 
 const Home = () => {
-  const [time, setTime] = useState(0);
+  const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
-  const [sessions, setSessions] = useState(() => {
-    const stored = localStorage.getItem("lactiapp_sesiones");
+  const [history, setHistory] = useState(() => {
+    const stored = localStorage.getItem("lactiapp-history");
     return stored ? JSON.parse(stored) : [];
   });
 
+  // 🕒 Cronómetro
   useEffect(() => {
-    let interval;
+    let timer;
     if (running) {
-      interval = setInterval(() => setTime(t => t + 1), 1000);
-    } else {
-      clearInterval(interval);
+      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
+    } else if (!running && seconds !== 0) {
+      clearInterval(timer);
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [running]);
 
-  useEffect(() => {
-    localStorage.setItem("lactiapp_sesiones", JSON.stringify(sessions));
-  }, [sessions]);
-
   const formatTime = (s) => {
-    const min = String(Math.floor(s / 60)).padStart(2, '0');
-    const sec = String(s % 60).padStart(2, '0');
-    return `${min}:${sec}`;
+    const mins = Math.floor(s / 60).toString().padStart(2, "0");
+    const secs = (s % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
   };
 
-  const handleSave = () => {
-    if (time === 0) return;
-
-    const newSession = {
-      id: Date.now(),
-      duration: time,
+  const handleRegister = () => {
+    const newEntry = {
+      time: new Date().toLocaleString(),
+      duration: seconds,
       side,
       note,
-      timestamp: new Date().toLocaleString()
     };
-
-    setSessions([newSession, ...sessions]);
-    setTime(0);
-    setNote("");
+    const updated = [newEntry, ...history];
+    setHistory(updated);
+    localStorage.setItem("lactiapp-history", JSON.stringify(updated));
+    // Reset
+    setSeconds(0);
     setRunning(false);
+    setNote("");
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto text-center pb-24">
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
-      <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
-      <div className="flex justify-center gap-4 mb-4">
-        <button onClick={() => setRunning(!running)} className="px-4 py-2 bg-pink-500 text-white rounded-full">
-          {running ? "Detener" : "Iniciar"}
+    <div className="p-6 pb-24 space-y-4">
+      <h1 className="text-xl font-bold text-pink-600">Registro de Lactancia</h1>
+
+      <div className="text-center text-3xl font-mono">{formatTime(seconds)}</div>
+      <div className="flex justify-center space-x-2">
+        <button onClick={() => setRunning(!running)} className="px-4 py-2 rounded bg-pink-500 text-white">
+          {running ? "Pausar" : "Iniciar"}
         </button>
-        <button onClick={() => { setRunning(false); setTime(0); }} className="px-4 py-2 bg-gray-300 text-black rounded-full">
-          Reiniciar
+        <button onClick={() => { setSeconds(0); setRunning(false); }} className="px-4 py-2 rounded bg-gray-300">
+          Reset
         </button>
       </div>
-      <select value={side} onChange={(e) => setSide(e.target.value)} className="w-full border rounded px-3 py-2 mb-2">
-        <option value="izquierdo">Izquierdo</option>
-        <option value="derecho">Derecho</option>
-      </select>
-      <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notas opcionales"
-        className="w-full border rounded px-3 py-2 mb-4" />
-      <button onClick={handleSave} disabled={time === 0} className="w-full bg-green-500 text-white py-2 rounded mb-6">
+
+      <div>
+        <label className="block font-medium">Lado:</label>
+        <select
+          value={side}
+          onChange={(e) => setSide(e.target.value)}
+          className="w-full border p-2 rounded"
+        >
+          <option value="izquierdo">Izquierdo</option>
+          <option value="derecho">Derecho</option>
+          <option value="ambos">Ambos</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block font-medium">Notas:</label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="w-full border p-2 rounded"
+          placeholder="Ej. bebé se quedó dormida"
+        />
+      </div>
+
+      <button onClick={handleRegister} className="w-full bg-pink-600 text-white py-2 rounded font-semibold">
         Registrar toma
       </button>
-      <div className="text-left">
-        <h2 className="text-lg font-semibold mb-2">Historial</h2>
-        {sessions.length === 0 ? (
-          <p className="text-gray-500">Aún no hay tomas registradas.</p>
+
+      <div>
+        <h2 className="text-lg font-semibold mt-6 mb-2">Historial</h2>
+        {history.length === 0 ? (
+          <p className="text-gray-500">No hay registros aún.</p>
         ) : (
-          <ul className="space-y-3">
-            {sessions.map((s) => (
-              <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
-                <div className="text-sm font-bold">{s.timestamp}</div>
-                <div>⏱️ {Math.floor(s.duration / 60)} min - 🤱 {s.side}</div>
-                {s.note && <div className="italic text-gray-600">“{s.note}”</div>}
+          <ul className="space-y-2">
+            {history.map((entry, i) => (
+              <li key={i} className="border p-2 rounded text-sm">
+                <strong>{entry.time}</strong> – {formatTime(entry.duration)} – {entry.side}
+                {entry.note && <div className="text-gray-600">📝 {entry.note}</div>}
               </li>
             ))}
           </ul>
