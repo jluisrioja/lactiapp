@@ -10,20 +10,18 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      console.log("Usuario autenticado:", user);
+      console.log("Logueado:", user);
       navigate("/"); // Redirige al Home
     } catch (error) {
-      console.error("Error en el login:", error);
-      alert("Ocurrió un error al iniciar sesión.");
+      console.error("Error de login", error);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-pink-50 p-4">
-      <h1 className="text-2xl font-bold text-pink-600 mb-6">Bienvenida a LactiApp 👶</h1>
+    <div className="min-h-screen flex items-center justify-center bg-pink-50">
       <button
         onClick={handleLogin}
-        className="bg-pink-600 text-white px-6 py-3 rounded text-lg font-medium shadow-md hover:bg-pink-700"
+        className="bg-pink-600 text-white px-6 py-3 rounded shadow-lg"
       >
         Iniciar sesión con Google
       </button>
