@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } f
 import Home from "./Home";
 import Login from "./Login";
 import { auth } from "./firebase";
-import { auth, googleProvider } from "./firebase";
+import { auth, googleProvider } from "./firebase.js";
+
 
 
 const Perfil = () => (
