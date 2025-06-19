@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } f
 import Home from "./Home";
 import Login from "./Login";
 import { auth } from "./firebase";
+import { auth, googleProvider } from "./firebase";
+
 
 const Perfil = () => (
   <div className="p-6 pb-24">
