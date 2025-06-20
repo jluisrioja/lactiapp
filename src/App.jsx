@@ -1,67 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
-import Home from "./Home";
-import Login from "./Login";
-import { auth } from "./firebase";
-import { auth, googleProvider } from "./firebase.js";
+import React from "react";
+import { useNavigate, BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./Home.jsx";
+import Login from "./Login.jsx";
+import { auth, googleProvider } from "./firebase.js"; // ✅ IMPORTACIÓN CORRECTA
 
-
-
-const Perfil = () => (
-  <div className="p-6 pb-24">
-    <h1 className="text-xl text-pink-600">Perfil</h1>
-  </div>
-);
-
-const BottomNav = () => {
-  const location = useLocation();
-  const isActive = (path) =>
-    location.pathname === path ? "text-pink-600 font-bold" : "text-gray-500";
-
+const App = () => {
   return (
-    <nav className="fixed bottom-0 w-full bg-white border-t shadow-md flex justify-around py-2 z-50">
-      <Link to="/" className={`flex flex-col items-center ${isActive("/")}`}>
-        🏠<span className="text-xs">Inicio</span>
-      </Link>
-      <Link to="/perfil" className={`flex flex-col items-center ${isActive("/perfil")}`}>
-        👤<span className="text-xs">Perfil</span>
-      </Link>
-    </nav>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </Router>
   );
 };
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      setUser(firebaseUser);
-      setCheckingAuth(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (checkingAuth) return <div className="p-6">Cargando...</div>;
-
-  return (
-    <Router>
-      <div className="min-h-screen pb-20">
-        <Routes>
-          {!user ? (
-            <Route path="*" element={<Login />} />
-          ) : (
-            <>
-              <Route path="/" element={<Home />} />
-              <Route path="/perfil" element={<Perfil />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </>
-          )}
-        </Routes>
-        {user && <BottomNav />}
-      </div>
-    </Router>
-  );
-}
-
 export default App;
+
