@@ -15,6 +15,11 @@ const Home = () => {
 
   const navigate = useNavigate();
 
+  // 👉 Datos del usuario logueado
+  const user = auth.currentUser;
+  const displayName = user?.displayName || "Usuario";
+  const photoURL = user?.photoURL;
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -27,7 +32,7 @@ const Home = () => {
   useEffect(() => {
     let interval;
     if (running) {
-      interval = setInterval(() => setTime(t => t + 1), 1000);
+      interval = setInterval(() => setTime((t) => t + 1), 1000);
     } else {
       clearInterval(interval);
     }
@@ -39,8 +44,8 @@ const Home = () => {
   }, [sessions]);
 
   const formatTime = (s) => {
-    const min = String(Math.floor(s / 60)).padStart(2, '0');
-    const sec = String(s % 60).padStart(2, '0');
+    const min = String(Math.floor(s / 60)).padStart(2, "0");
+    const sec = String(s % 60).padStart(2, "0");
     return `${min}:${sec}`;
   };
 
@@ -52,7 +57,7 @@ const Home = () => {
       duration: time,
       side,
       note,
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toLocaleString(),
     };
 
     setSessions([newSession, ...sessions]);
@@ -71,7 +76,23 @@ const Home = () => {
         Cerrar sesión
       </button>
 
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
+      {/* Saludo con foto y nombre */}
+      <div className="flex items-center justify-center gap-3 mt-2 mb-4">
+        {photoURL && (
+          <img
+            src={photoURL}
+            alt="Foto de perfil"
+            className="w-10 h-10 rounded-full border-2 border-pink-300"
+          />
+        )}
+        <span className="text-sm text-gray-700 font-medium">
+          ¡Hola, {displayName}!
+        </span>
+      </div>
+
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">
+        Registrar toma 🍼
+      </h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
 
@@ -83,7 +104,10 @@ const Home = () => {
           {running ? "Detener" : "Iniciar"}
         </button>
         <button
-          onClick={() => { setRunning(false); setTime(0); }}
+          onClick={() => {
+            setRunning(false);
+            setTime(0);
+          }}
           className="px-4 py-2 bg-gray-300 text-black rounded-full"
         >
           Reiniciar
@@ -124,7 +148,9 @@ const Home = () => {
             {sessions.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">{s.timestamp}</div>
-                <div>⏱️ {formatTime(s.duration)} – 🤱 {s.side}</div>
+                <div>
+                  ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                </div>
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
                     “{s.note}”
