@@ -10,6 +10,9 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
+import EstadisticasTexto from "./components/EstadisticasTexto";
+// import GraficosEstadisticas from "./components/GraficosEstadisticas"; ← luego lo usaremos
+
 const Home = () => {
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
@@ -32,7 +35,6 @@ const Home = () => {
     }
   };
 
-  /* 👉 Suscribirse a Firestore */
   useEffect(() => {
     if (!user) return;
 
@@ -52,7 +54,6 @@ const Home = () => {
     return () => unsubscribe();
   }, [user]);
 
-  /* 👉 Cronómetro */
   useEffect(() => {
     let interval;
     if (running) {
@@ -63,14 +64,12 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [running]);
 
-  /* 👉 Helpers */
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
     return `${min}:${sec}`;
   };
 
-  /* 👉 Guardar toma */
   const handleSave = async () => {
     if (time === 0 || !user) return;
 
@@ -90,26 +89,6 @@ const Home = () => {
       console.error("Error al guardar en Firestore:", error);
     }
   };
-
-  /* 👉 Estadísticas calculadas */
-  const stats = useMemo(() => {
-    const total = sessions.length;
-    if (total === 0) return null;
-
-    const totalDuration = sessions.reduce(
-      (acc, s) => acc + (s.duration || 0),
-      0
-    );
-    const avg = Math.floor(totalDuration / total);
-
-    const sideCounts = {
-      izquierdo: sessions.filter((s) => s.side === "izquierdo").length,
-      derecho: sessions.filter((s) => s.side === "derecho").length,
-      ambos: sessions.filter((s) => s.side === "ambos").length,
-    };
-
-    return { total, avg, sideCounts };
-  }, [sessions]);
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
@@ -182,24 +161,11 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas */}
-      {stats && (
-        <div className="text-left bg-pink-50 p-4 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold mb-2">Estadísticas</h2>
-          <p>
-            Total de tomas: <strong>{stats.total}</strong>
-          </p>
-          <p>
-            Duración promedio: <strong>{formatTime(stats.avg)}</strong>
-          </p>
-          <p className="mt-2 font-semibold">Distribución por lado:</p>
-          <ul className="ml-4 list-disc text-sm text-gray-700">
-            <li>Izquierdo: {stats.sideCounts.izquierdo}</li>
-            <li>Derecho: {stats.sideCounts.derecho}</li>
-            <li>Ambos: {stats.sideCounts.ambos}</li>
-          </ul>
-        </div>
-      )}
+      {/* Estadísticas numéricas */}
+      <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
+
+      {/* Gráficos (proximamente) */}
+      {/* <GraficosEstadisticas sessions={sessions} /> */}
 
       {/* Historial */}
       <div className="text-left">
