@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const [time, setTime] = useState(0);
@@ -9,6 +12,17 @@ const Home = () => {
     const stored = localStorage.getItem("lactiapp_sesiones");
     return stored ? JSON.parse(stored) : [];
   });
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   useEffect(() => {
     let interval;
@@ -48,7 +62,15 @@ const Home = () => {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto text-center pb-24">
+    <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
+      {/* Botón de cerrar sesión */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded hover:bg-pink-200"
+      >
+        Cerrar sesión
+      </button>
+
       <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
@@ -118,3 +140,4 @@ const Home = () => {
 };
 
 export default Home;
+
