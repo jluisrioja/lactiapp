@@ -1,3 +1,4 @@
+
 // firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
@@ -12,7 +13,6 @@ const firebaseConfig = {
   appId: "1:670894439866:web:7367d0840665679bb7b183",
   measurementId: "G-VG05M9F1YZ"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
