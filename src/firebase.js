@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD8YSZiH_-p2ipJT6JfYgBkuMzyVo78tio",
   authDomain: "lactiapp.firebaseapp.com",
   projectId: "lactiapp",
-  storageBucket: "lactiapp.firebasestorage.app",
+  storageBucket: "lactiapp.appspot.com",
   messagingSenderId: "670894439866",
   appId: "1:670894439866:web:7367d0840665679bb7b183",
   measurementId: "G-VG05M9F1YZ"
