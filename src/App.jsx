@@ -21,7 +21,7 @@ const App = () => {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white text-gray-700">
         <p>Cargando...</p>
       </div>
     );
@@ -33,7 +33,7 @@ const App = () => {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute user={user}>
               <Home />
             </ProtectedRoute>
           }
