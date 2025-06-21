@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import { useNavigate } from "react-router-dom";
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
 
 const Home = () => {
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
-  const [sessions, setSessions] = useState(() => {
-    const stored = localStorage.getItem("lactiapp_sesiones");
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [sessions, setSessions] = useState([]);
 
   const navigate = useNavigate();
 
-  // 👉 Datos del usuario logueado
   const user = auth.currentUser;
   const displayName = user?.displayName || "Usuario";
   const photoURL = user?.photoURL;
@@ -30,6 +33,25 @@ const Home = () => {
   };
 
   useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "usuarios", user.uid, "tomas"),
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setSessions(data);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
     let interval;
     if (running) {
       interval = setInterval(() => setTime((t) => t + 1), 1000);
@@ -39,31 +61,30 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [running]);
 
-  useEffect(() => {
-    localStorage.setItem("lactiapp_sesiones", JSON.stringify(sessions));
-  }, [sessions]);
-
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
     return `${min}:${sec}`;
   };
 
-  const handleSave = () => {
-    if (time === 0) return;
+  const handleSave = async () => {
+    if (time === 0 || !user) return;
 
     const newSession = {
-      id: Date.now(),
       duration: time,
       side,
       note,
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date(),
     };
 
-    setSessions([newSession, ...sessions]);
-    setTime(0);
-    setNote("");
-    setRunning(false);
+    try {
+      await addDoc(collection(db, "usuarios", user.uid, "tomas"), newSession);
+      setTime(0);
+      setNote("");
+      setRunning(false);
+    } catch (error) {
+      console.error("Error al guardar en Firestore:", error);
+    }
   };
 
   return (
@@ -76,7 +97,7 @@ const Home = () => {
         Cerrar sesión
       </button>
 
-      {/* Saludo con foto y nombre */}
+      {/* Saludo */}
       <div className="flex items-center justify-center gap-3 mt-2 mb-4">
         {photoURL && (
           <img
@@ -90,9 +111,7 @@ const Home = () => {
         </span>
       </div>
 
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">
-        Registrar toma 🍼
-      </h1>
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
 
@@ -147,10 +166,10 @@ const Home = () => {
           <ul className="space-y-3">
             {sessions.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
-                <div className="text-sm font-bold">{s.timestamp}</div>
-                <div>
-                  ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                <div className="text-sm font-bold">
+                  {new Date(s.timestamp?.seconds * 1000).toLocaleString()}
                 </div>
+                <div>⏱️ {formatTime(s.duration)} – 🤱 {s.side}</div>
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
                     “{s.note}”
@@ -166,4 +185,3 @@ const Home = () => {
 };
 
 export default Home;
-
