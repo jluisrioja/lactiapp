@@ -1,26 +1,21 @@
-// firebase.js
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// 🔧 Tu configuración de Firebase
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyD8YSZiH_-p2ipJT6JfYgBkuMzyVo78tio",
+  authDomain: "lactiapp.firebaseapp.com",
+  projectId: "lactiapp",
+  storageBucket: "lactiapp.firebasestorage.app",
+  messagingSenderId: "670894439866",
+  appId: "1:670894439866:web:7367d0840665679bb7b183",
+  measurementId: "G-VG05M9F1YZ"
 };
 
-// 🚀 Inicializar Firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// 🔐 Auth y proveedor Google
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-
-// 🗄️ Firestore (por si lo usas para guardar tomas)
-const db = getFirestore(app);
-
-export { auth, googleProvider, db };
+const analytics = getAnalytics(app);
