@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-import EstadisticasTexto from "./components/EstadisticasTexto";
+// import EstadisticasTexto from "./components/EstadisticasTexto";
 // import GraficosEstadisticas from "./components/GraficosEstadisticas"; ← luego lo usaremos
 
 const Home = () => {
@@ -90,9 +90,20 @@ const Home = () => {
     }
   };
 
+  const totalTomas = sessions.length;
+  const promDuracion =
+    totalTomas > 0
+      ? formatTime(
+          Math.floor(
+            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
+          )
+        )
+      : "00:00";
+  const ultimoLado = sessions[0]?.side || "—";
+  const ultimaNota = sessions.find((s) => s.note)?.note || "—";
+
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
-      {/* Botón de cerrar sesión */}
       <button
         onClick={handleLogout}
         className="absolute top-4 right-4 text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded hover:bg-pink-200"
@@ -100,7 +111,6 @@ const Home = () => {
         Cerrar sesión
       </button>
 
-      {/* Saludo */}
       <div className="flex items-center justify-center gap-3 mt-2 mb-4">
         {photoURL && (
           <img
@@ -161,13 +171,28 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas numéricas */}
-      <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
+      {/* Estadísticas embebidas */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Total de Tomas</p>
+          <p className="text-2xl font-bold text-pink-600">{totalTomas}</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Prom. Duración</p>
+          <p className="text-2xl font-bold text-pink-600">{promDuracion}</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Último Lado</p>
+          <p className="text-2xl font-bold text-pink-600">{ultimoLado}</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Notas recientes</p>
+          <p className="text-sm text-gray-700">{ultimaNota}</p>
+        </div>
+      </div>
 
-      {/* Gráficos (proximamente) */}
       {/* <GraficosEstadisticas sessions={sessions} /> */}
 
-      {/* Historial */}
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">Historial</h2>
         {sessions.length === 0 ? (
