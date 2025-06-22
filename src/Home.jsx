@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 // import EstadisticasTexto from "./components/EstadisticasTexto";
-// import GraficosEstadisticas from "./components/GraficosEstadisticas"; ← luego lo usaremos
+import GraficosEstadisticas from "./components/GraficosEstadisticas"; ← luego lo usaremos
 
 const Home = () => {
   const [time, setTime] = useState(0);
@@ -191,7 +191,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* <GraficosEstadisticas sessions={sessions} /> */}
+      <GraficosEstadisticas sessions={sessions} />
 
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">Historial</h2>
