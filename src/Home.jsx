@@ -11,6 +11,8 @@ import {
 } from "firebase/firestore";
 
 // import EstadisticasTexto from "./components/EstadisticasTexto";
+//import GraficosEstadisticas from "./components/GraficosEstadisticas";
+
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
 
 const Home = () => {
