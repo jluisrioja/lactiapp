@@ -10,9 +10,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-// import EstadisticasTexto from "./components/EstadisticasTexto";
-//import GraficosEstadisticas from "./components/GraficosEstadisticas";
-
+import EstadisticasTexto from "./components/EstadisticasTexto";
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
 
 const Home = () => {
@@ -70,7 +68,6 @@ const Home = () => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
     return `${min}:${sec}`;
-//    return ${min}:${sec};
   };
 
   const handleSave = async () => {
@@ -98,7 +95,8 @@ const Home = () => {
     totalTomas > 0
       ? formatTime(
           Math.floor(
-            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
+            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) /
+              totalTomas
           )
         )
       : "00:00";
@@ -127,7 +125,9 @@ const Home = () => {
         </span>
       </div>
 
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">
+        Registrar toma 🍼
+      </h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
 
@@ -174,7 +174,10 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas embebidas */}
+      {/* Estadísticas nuevas con componente */}
+      <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
+
+      {/* Estadísticas originales para comparar */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white shadow rounded-2xl p-4 text-center">
           <p className="text-sm text-gray-500">Total de Tomas</p>
@@ -206,7 +209,7 @@ const Home = () => {
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">
                   {new Date(
-                    (s.timestamp.seconds || 0) * 1000
+                    (s.timestamp?.seconds || 0) * 1000
                   ).toLocaleString()}
                 </div>
                 <div>
