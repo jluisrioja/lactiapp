@@ -10,8 +10,9 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-import EstadisticasTexto from "./components/EstadisticasTexto";
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 const Home = () => {
   const [time, setTime] = useState(0);
@@ -19,9 +20,10 @@ const Home = () => {
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [availableDates, setAvailableDates] = useState([]);
 
   const navigate = useNavigate();
-
   const user = auth.currentUser;
   const displayName = user?.displayName || "Usuario";
   const photoURL = user?.photoURL;
@@ -49,10 +51,26 @@ const Home = () => {
         ...doc.data(),
       }));
       setSessions(data);
+
+      const fechas = Array.from(
+        new Set(
+          data.map((s) =>
+            new Date((s.timestamp?.seconds || 0) * 1000).toDateString()
+          )
+        )
+      );
+      setAvailableDates(fechas);
     });
 
     return () => unsubscribe();
   }, [user]);
+
+  const sesionesDelDia = useMemo(() => {
+    return sessions.filter((s) => {
+      const fecha = new Date((s.timestamp?.seconds || 0) * 1000);
+      return fecha.toDateString() === selectedDate.toDateString();
+    });
+  }, [sessions, selectedDate]);
 
   useEffect(() => {
     let interval;
@@ -90,18 +108,18 @@ const Home = () => {
     }
   };
 
-  const totalTomas = sessions.length;
+  const totalTomas = sesionesDelDia.length;
   const promDuracion =
     totalTomas > 0
       ? formatTime(
           Math.floor(
-            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) /
+            sesionesDelDia.reduce((sum, s) => sum + (s.duration || 0), 0) /
               totalTomas
           )
         )
       : "00:00";
-  const ultimoLado = sessions[0]?.side || "—";
-  const ultimaNota = sessions.find((s) => s.note)?.note || "—";
+  const ultimoLado = sesionesDelDia[0]?.side || "—";
+  const ultimaNota = sesionesDelDia.find((s) => s.note)?.note || "—";
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
@@ -125,9 +143,16 @@ const Home = () => {
         </span>
       </div>
 
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">
-        Registrar toma 🍼
-      </h1>
+      <Calendar
+        onChange={setSelectedDate}
+        value={selectedDate}
+        tileClassName={({ date }) =>
+          availableDates.includes(date.toDateString()) ? "bg-pink-100" : null
+        }
+        className="mb-4 mx-auto"
+      />
+
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
 
@@ -174,10 +199,7 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas nuevas con componente */}
-      <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
-
-      {/* Estadísticas originales para comparar */}
+      {/* Estadísticas embebidas */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white shadow rounded-2xl p-4 text-center">
           <p className="text-sm text-gray-500">Total de Tomas</p>
@@ -197,15 +219,15 @@ const Home = () => {
         </div>
       </div>
 
-      <GraficosEstadisticas sessions={sessions} />
+      <GraficosEstadisticas sessions={sesionesDelDia} />
 
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">Historial</h2>
-        {sessions.length === 0 ? (
+        {sesionesDelDia.length === 0 ? (
           <p className="text-gray-500">Aún no hay tomas registradas.</p>
         ) : (
           <ul className="space-y-3">
-            {sessions.map((s) => (
+            {sesionesDelDia.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">
                   {new Date(
