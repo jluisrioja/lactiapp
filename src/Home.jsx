@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { signOut } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,9 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-import EstadisticasTexto from "./components/EstadisticasTexto";
+// import EstadisticasTexto from "./components/EstadisticasTexto";
+//import GraficosEstadisticas from "./components/GraficosEstadisticas";
+
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
 
 const Home = () => {
@@ -67,7 +69,7 @@ const Home = () => {
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
-    return `${min}:${sec}`;
+    return ${min}:${sec};
   };
 
   const handleSave = async () => {
@@ -90,6 +92,15 @@ const Home = () => {
     }
   };
 
+  const totalTomas = sessions.length;
+  const promDuracion =
+    totalTomas > 0
+      ? formatTime(
+          Math.floor(
+            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
+          )
+        )
+      : "00:00";
   const ultimoLado = sessions[0]?.side || "—";
   const ultimaNota = sessions.find((s) => s.note)?.note || "—";
 
@@ -115,9 +126,7 @@ const Home = () => {
         </span>
       </div>
 
-      <h1 className="text-2xl font-bold text-pink-600 mb-4">
-        Registrar toma 🍼
-      </h1>
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
 
       <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
 
@@ -164,11 +173,16 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas con componente */}
-      <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
-
-      {/* Datos complementarios individuales */}
+      {/* Estadísticas embebidas */}
       <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Total de Tomas</p>
+          <p className="text-2xl font-bold text-pink-600">{totalTomas}</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Prom. Duración</p>
+          <p className="text-2xl font-bold text-pink-600">{promDuracion}</p>
+        </div>
         <div className="bg-white shadow rounded-2xl p-4 text-center">
           <p className="text-sm text-gray-500">Último Lado</p>
           <p className="text-2xl font-bold text-pink-600">{ultimoLado}</p>
