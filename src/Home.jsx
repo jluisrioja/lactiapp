@@ -69,7 +69,8 @@ const Home = () => {
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
-    return ${min}:${sec};
+    return `${min}:${sec}`;
+//    return ${min}:${sec};
   };
 
   const handleSave = async () => {
