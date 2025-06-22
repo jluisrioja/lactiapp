@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './',          // ← ¡esto es imprescindible!
+  base: './', // ✅ esto es lo que soluciona el error
 });
