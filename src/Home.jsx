@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 // import EstadisticasTexto from "./components/EstadisticasTexto";
-import GraficosEstadisticas from "./components/GraficosEstadisticas"; ← luego lo usaremos
+import GraficosEstadisticas from "./components/GraficosEstadisticas";
 
 const Home = () => {
   const [time, setTime] = useState(0);
