@@ -95,13 +95,92 @@ const Home = () => {
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
-      {/* ... otros elementos como botones, cronómetro, formulario ... */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded hover:bg-pink-200"
+      >
+        Cerrar sesión
+      </button>
 
+      <div className="flex items-center justify-center gap-3 mt-2 mb-4">
+        {photoURL && (
+          <img
+            src={photoURL}
+            alt="Foto de perfil"
+            className="w-10 h-10 rounded-full border-2 border-pink-300"
+          />
+        )}
+        <span className="text-sm text-gray-700 font-medium">
+          ¡Hola, {displayName}!
+        </span>
+      </div>
+
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">
+        Registrar toma 🍼
+      </h1>
+
+      <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
+
+      <div className="flex justify-center gap-4 mb-4">
+        <button
+          onClick={() => setRunning(!running)}
+          className="px-4 py-2 bg-pink-500 text-white rounded-full"
+        >
+          {running ? "Detener" : "Iniciar"}
+        </button>
+        <button
+          onClick={() => {
+            setRunning(false);
+            setTime(0);
+          }}
+          className="px-4 py-2 bg-gray-300 text-black rounded-full"
+        >
+          Reiniciar
+        </button>
+      </div>
+
+      <select
+        value={side}
+        onChange={(e) => setSide(e.target.value)}
+        className="w-full border rounded px-3 py-2 mb-2"
+      >
+        <option value="izquierdo">Izquierdo</option>
+        <option value="derecho">Derecho</option>
+        <option value="ambos">Ambos</option>
+      </select>
+
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Notas opcionales"
+        className="w-full border rounded px-3 py-2 mb-4"
+      />
+
+      <button
+        onClick={handleSave}
+        disabled={time === 0}
+        className="w-full bg-green-500 text-white py-2 rounded mb-6 disabled:opacity-50"
+      >
+        Registrar toma
+      </button>
+
+      {/* Estadísticas con componente */}
       <EstadisticasTexto sessions={sessions} formatTime={formatTime} />
+
+      {/* Datos complementarios individuales */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Último Lado</p>
+          <p className="text-2xl font-bold text-pink-600">{ultimoLado}</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-500">Notas recientes</p>
+          <p className="text-sm text-gray-700">{ultimaNota}</p>
+        </div>
+      </div>
 
       <GraficosEstadisticas sessions={sessions} />
 
-      {/* Historial */}
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">Historial</h2>
         {sessions.length === 0 ? (
