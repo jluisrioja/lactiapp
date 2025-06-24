@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // 👈 IMPORTANTE
+  base: '/', // 👈 Esto asegura que las rutas en producción sean absolutas
 })
