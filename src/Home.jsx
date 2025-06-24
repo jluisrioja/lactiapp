@@ -209,7 +209,7 @@ const Home = () => {
                   ).toLocaleString()}
                 </div>
                 <div>
-                  ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                 ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
                 </div>
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
