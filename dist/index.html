@@ -4,11 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LactiApp</title>
-    <script type="module" crossorigin src="/assets/index-82eb2ac7.js"></script>
-    <link rel="stylesheet" href="/assets/index-a816863f.css">
+
+    <!-- Íconos -->
+    <link rel="icon" href="./assets/icon-bfe847cb.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./assets/icon-512-0e0e7eb8.png" />
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- Meta para instalación y tema -->
+    <meta name="theme-color" content="#fffafc" />
+    <meta name="apple-mobile-web-app-title" content="LactiApp" />
+    <meta name="application-name" content="LactiApp" />
+    <script type="module" crossorigin src="./assets/index-0f2fc13d.js"></script>
+    <link rel="stylesheet" href="./assets/index-d35ff86b.css">
   </head>
   <body>
     <div id="root"></div>
     
+
+    <!-- Registro del Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(
+            registration => {
+              console.log('Service Worker registrado con éxito:', registration);
+            },
+            err => {
+              console.log('Fallo en el registro del Service Worker:', err);
+            }
+          );
+        });
+      }
+    </script>
   </body>
 </html>
