@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-// import EstadisticasTexto from "./components/EstadisticasTexto";
+import EstadisticasTexto from "./components/EstadisticasTexto";
 //import GraficosEstadisticas from "./components/GraficosEstadisticas";
 
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
@@ -173,25 +173,7 @@ const Home = () => {
         Registrar toma
       </button>
 
-      {/* Estadísticas embebidas */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white shadow rounded-2xl p-4 text-center">
-          <p className="text-sm text-gray-500">Total de Tomas</p>
-          <p className="text-2xl font-bold text-pink-600">{totalTomas}</p>
-        </div>
-        <div className="bg-white shadow rounded-2xl p-4 text-center">
-          <p className="text-sm text-gray-500">Prom. Duración</p>
-          <p className="text-2xl font-bold text-pink-600">{promDuracion}</p>
-        </div>
-        <div className="bg-white shadow rounded-2xl p-4 text-center">
-          <p className="text-sm text-gray-500">Último Lado</p>
-          <p className="text-2xl font-bold text-pink-600">{ultimoLado}</p>
-        </div>
-        <div className="bg-white shadow rounded-2xl p-4 text-center">
-          <p className="text-sm text-gray-500">Notas recientes</p>
-          <p className="text-sm text-gray-700">{ultimaNota}</p>
-        </div>
-      </div>
+      <EstadisticasTexto sessions={sessions} />
 
       <GraficosEstadisticas sessions={sessions} />
 
