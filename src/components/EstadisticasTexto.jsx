@@ -1,42 +1,54 @@
-import React, { useMemo } from "react";
+import React from "react";
 
-const EstadisticasTexto = ({ sessions, formatTime }) => {
-  const stats = useMemo(() => {
-    const total = sessions.length;
-    if (total === 0) return null;
+const EstadisticasTexto = ({ sessions }) => {
+  const formatTime = (s) => {
+    const min = String(Math.floor(s / 60)).padStart(2, "0");
+    const sec = String(s % 60).padStart(2, "0");
+    return `${min}:${sec}`;
+  };
 
-    const totalDuration = sessions.reduce(
-      (acc, s) => acc + (s.duration || 0),
-      0
-    );
-    const avg = Math.floor(totalDuration / total);
+  // Filtrar solo las tomas del día actual
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const sideCounts = {
-      izquierdo: sessions.filter((s) => s.side === "izquierdo").length,
-      derecho: sessions.filter((s) => s.side === "derecho").length,
-      ambos: sessions.filter((s) => s.side === "ambos").length,
-    };
+  const sesionesHoy = sessions.filter((s) => {
+    const fecha = new Date((s.timestamp?.seconds || 0) * 1000);
+    return fecha >= today;
+  });
 
-    return { total, avg, sideCounts };
-  }, [sessions]);
+  const totalTomas = sesionesHoy.length;
 
-  if (!stats) return null;
+  const promDuracion =
+    totalTomas > 0
+      ? formatTime(
+          Math.floor(
+            sesionesHoy.reduce((sum, s) => sum + (s.duration || 0), 0) /
+              totalTomas
+          )
+        )
+      : "00:00";
+
+  const ultimoLado = sesionesHoy[0]?.side || "—";
+  const ultimaNota = sesionesHoy.find((s) => s.note)?.note || "—";
 
   return (
-    <div className="text-left bg-pink-50 p-4 rounded-lg shadow mb-6">
-      <h2 className="text-lg font-semibold mb-2">Estadísticas</h2>
-      <p>
-        Total de tomas: <strong>{stats.total}</strong>
-      </p>
-      <p>
-        Duración promedio: <strong>{formatTime(stats.avg)}</strong>
-      </p>
-      <p className="mt-2 font-semibold">Distribución por lado:</p>
-      <ul className="ml-4 list-disc text-sm text-gray-700">
-        <li>Izquierdo: {stats.sideCounts.izquierdo}</li>
-        <li>Derecho: {stats.sideCounts.derecho}</li>
-        <li>Ambos: {stats.sideCounts.ambos}</li>
-      </ul>
+    <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="bg-white shadow rounded-2xl p-4 text-center">
+        <p className="text-sm text-gray-500">Tomas de hoy</p>
+        <p className="text-2xl font-bold text-pink-600">{totalTomas}</p>
+      </div>
+      <div className="bg-white shadow rounded-2xl p-4 text-center">
+        <p className="text-sm text-gray-500">Prom. Duración</p>
+        <p className="text-2xl font-bold text-pink-600">{promDuracion}</p>
+      </div>
+      <div className="bg-white shadow rounded-2xl p-4 text-center">
+        <p className="text-sm text-gray-500">Último Lado</p>
+        <p className="text-2xl font-bold text-pink-600">{ultimoLado}</p>
+      </div>
+      <div className="bg-white shadow rounded-2xl p-4 text-center">
+        <p className="text-sm text-gray-500">Notas recientes</p>
+        <p className="text-sm text-gray-700">{ultimaNota}</p>
+      </div>
     </div>
   );
 };
