@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import Calendar from "react-calendar";
 import 'react-calendar/dist/Calendar.css';
 
-const CalendarioTomas = ({ onChangeFecha, sessions }) => {
+const CalendarioTomas = ({ onChangeFecha, sessions = [] }) => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
 
   const handleChange = (date) => {
@@ -12,9 +12,9 @@ const CalendarioTomas = ({ onChangeFecha, sessions }) => {
 
   const fechasConTomas = useMemo(() => {
     return new Set(
-      sessions.map((s) =>
-        new Date(s.timestamp.seconds * 1000).toDateString()
-      )
+      sessions
+        .filter((s) => s?.timestamp?.seconds)
+        .map((s) => new Date(s.timestamp.seconds * 1000).toDateString())
     );
   }, [sessions]);
 
