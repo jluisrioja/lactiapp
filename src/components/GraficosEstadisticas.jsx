@@ -1,24 +1,29 @@
 import React, { useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, LabelList,
 } from "recharts";
+import { format, subDays, isAfter } from "date-fns";
+import { es } from "date-fns/locale";
 
 const GraficosEstadisticas = ({ sessions }) => {
-  // 1️⃣ Agregar métricas por día
   const { porDia, ladoCounts } = useMemo(() => {
+    const hoy = new Date();
+    const hace6dias = subDays(hoy, 5); // incluye hoy y 5 días atrás
+
     const dayMap = {};
     const sideMap = { izquierdo: 0, derecho: 0, ambos: 0 };
 
     sessions.forEach(({ duration = 0, timestamp, side }) => {
-      // Firestore Timestamp → JS Date
-      const dateObj = timestamp.seconds
+      const fecha = timestamp.seconds
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
-      const dayKey = dateObj.toLocaleDateString("es-PE");
 
-      dayMap[dayKey] = (dayMap[dayKey] || 0) + duration / 60; // minutos
-      sideMap[side] = (sideMap[side] || 0) + 1;
+      if (isAfter(fecha, subDays(hoy, 6))) {
+        const dayKey = format(fecha, "dd-MMM", { locale: es });
+        dayMap[dayKey] = (dayMap[dayKey] || 0) + duration / 60;
+        sideMap[side] = (sideMap[side] || 0) + 1;
+      }
     });
 
     const porDia = Object.entries(dayMap).map(([day, min]) => ({
@@ -34,7 +39,7 @@ const GraficosEstadisticas = ({ sessions }) => {
     return { porDia, ladoCounts };
   }, [sessions]);
 
-  const colores = ["#ec4899", "#f9a8d4", "#fda4af"]; // tonos neutros rosa
+  const colores = ["#ec4899", "#f9a8d4", "#fda4af"];
 
   return (
     <div className="space-y-8">
@@ -44,11 +49,19 @@ const GraficosEstadisticas = ({ sessions }) => {
           Minutos de lactancia por día
         </h3>
         <ResponsiveContainer>
-          <BarChart data={porDia}>
-            <XAxis dataKey="day" />
+          <BarChart data={porDia} margin={{ top: 20, bottom: 30 }}>
+            <XAxis
+              dataKey="day"
+              angle={-25}
+              textAnchor="end"
+              interval={0}
+              height={50}
+            />
             <YAxis />
-            <Tooltip />
-            <Bar dataKey="min" radius={[6, 6, 0, 0]} />
+            <Tooltip formatter={(v) => `${v} min`} />
+            <Bar dataKey="min" fill="#ec4899" radius={[6, 6, 0, 0]}>
+              <LabelList dataKey="min" position="top" fill="#000" />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
