@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList,
@@ -6,13 +6,15 @@ import {
 import { format, subDays, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 
-// ✅ Ahora recibe también la fecha de referencia
 const GraficosEstadisticas = ({ sessions, fechaReferencia }) => {
-  const { porDia, ladoCounts } = useMemo(() => {
-    const hoy = fechaReferencia || new Date(); // ✅ base desde la fecha seleccionada
-    const hace6dias = subDays(hoy, 5); // incluye hoy y 5 días atrás
+  const [modo, setModo] = useState("minutos"); // 'minutos' o 'cantidad'
 
-    const dayMap = {};
+  const { porDiaMin, porDiaCantidad, ladoCounts } = useMemo(() => {
+    const hoy = fechaReferencia || new Date();
+    const hace6dias = subDays(hoy, 5);
+
+    const minutosMap = {};
+    const cantidadMap = {};
     const sideMap = { izquierdo: 0, derecho: 0, ambos: 0 };
 
     sessions.forEach(({ duration = 0, timestamp, side }) => {
@@ -21,15 +23,22 @@ const GraficosEstadisticas = ({ sessions, fechaReferencia }) => {
         : new Date(timestamp);
 
       if (isAfter(fecha, subDays(hoy, 6))) {
-        const dayKey = format(fecha, "dd-MMM", { locale: es });
-        dayMap[dayKey] = (dayMap[dayKey] || 0) + duration / 60;
+        const key = format(fecha, "dd-MMM", { locale: es });
+
+        minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
+        cantidadMap[key] = (cantidadMap[key] || 0) + 1;
         sideMap[side] = (sideMap[side] || 0) + 1;
       }
     });
 
-    const porDia = Object.entries(dayMap).map(([day, min]) => ({
+    const porDiaMin = Object.entries(minutosMap).map(([day, min]) => ({
       day,
-      min: Math.round(min),
+      value: Math.round(min),
+    }));
+
+    const porDiaCantidad = Object.entries(cantidadMap).map(([day, count]) => ({
+      day,
+      value: count,
     }));
 
     const ladoCounts = Object.entries(sideMap).map(([name, value]) => ({
@@ -37,20 +46,35 @@ const GraficosEstadisticas = ({ sessions, fechaReferencia }) => {
       value,
     }));
 
-    return { porDia, ladoCounts };
-  }, [sessions, fechaReferencia]); // ✅ importante agregar fechaReferencia como dependencia
+    return { porDiaMin, porDiaCantidad, ladoCounts };
+  }, [sessions, fechaReferencia]);
 
   const colores = ["#ec4899", "#f9a8d4", "#fda4af"];
 
+  const datos = modo === "minutos" ? porDiaMin : porDiaCantidad;
+  const etiqueta = modo === "minutos" ? "min" : "tomas";
+  const titulo = modo === "minutos"
+    ? "Minutos de lactancia por día"
+    : "Cantidad de tomas por día";
+
   return (
     <div className="space-y-8">
-      {/* Duración total (min) por día */}
+      {/* Toggle y gráfico de barras */}
       <div className="w-full h-72">
-        <h3 className="text-center font-semibold mb-2">
-          Minutos de lactancia por día
-        </h3>
+        <div className="flex justify-between items-center mb-2 px-2">
+          <h3 className="text-center font-semibold">{titulo}</h3>
+          <button
+            onClick={() =>
+              setModo((prev) => (prev === "minutos" ? "cantidad" : "minutos"))
+            }
+            className="text-sm text-pink-600 bg-pink-100 px-3 py-1 rounded hover:bg-pink-200"
+          >
+            Ver {modo === "minutos" ? "cantidad de tomas" : "minutos de lactancia"}
+          </button>
+        </div>
+
         <ResponsiveContainer>
-          <BarChart data={porDia} margin={{ top: 20, bottom: 30 }}>
+          <BarChart data={datos} margin={{ top: 20, bottom: 30 }}>
             <XAxis
               dataKey="day"
               angle={-25}
@@ -59,15 +83,15 @@ const GraficosEstadisticas = ({ sessions, fechaReferencia }) => {
               height={50}
             />
             <YAxis />
-            <Tooltip formatter={(v) => `${v} min`} />
-            <Bar dataKey="min" fill="#ec4899" radius={[6, 6, 0, 0]}>
-              <LabelList dataKey="min" position="top" fill="#000" />
+            <Tooltip formatter={(v) => `${v} ${etiqueta}`} />
+            <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]}>
+              <LabelList dataKey="value" position="top" fill="#000" />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Distribución de lados */}
+      {/* Gráfico de torta */}
       <div className="w-full h-72">
         <h3 className="text-center font-semibold mb-2">
           Distribución de tomas por lado
