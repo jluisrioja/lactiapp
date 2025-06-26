@@ -204,7 +204,8 @@ const Home = () => {
         </p>
       </div>
 
-      <GraficosEstadisticas sessions={sessions} />
+      <GraficosEstadisticas sessions={sessions} fechaReferencia={fechaSeleccionada} />
+
 
       <div className="text-left mt-6">
         <h2 className="text-lg font-semibold mb-2">

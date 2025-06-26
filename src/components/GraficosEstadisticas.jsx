@@ -6,9 +6,10 @@ import {
 import { format, subDays, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 
-const GraficosEstadisticas = ({ sessions }) => {
+// ✅ Ahora recibe también la fecha de referencia
+const GraficosEstadisticas = ({ sessions, fechaReferencia }) => {
   const { porDia, ladoCounts } = useMemo(() => {
-    const hoy = new Date();
+    const hoy = fechaReferencia || new Date(); // ✅ base desde la fecha seleccionada
     const hace6dias = subDays(hoy, 5); // incluye hoy y 5 días atrás
 
     const dayMap = {};
@@ -37,7 +38,7 @@ const GraficosEstadisticas = ({ sessions }) => {
     }));
 
     return { porDia, ladoCounts };
-  }, [sessions]);
+  }, [sessions, fechaReferencia]); // ✅ importante agregar fechaReferencia como dependencia
 
   const colores = ["#ec4899", "#f9a8d4", "#fda4af"];
 
