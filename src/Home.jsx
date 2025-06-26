@@ -184,8 +184,10 @@ const Home = () => {
 
       <GraficosEstadisticas sessions={sessions} />
 
-      <CalendarioTomas onChangeFecha={setFechaFiltro} />
+      
+      <CalendarioTomas onChangeFecha={setFechaFiltro} sessions={sessions} />
 
+      
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">
           Tomas del {fechaFiltro.toLocaleDateString()}
