@@ -192,6 +192,7 @@ const Home = () => {
         <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
       )}
 
+      <EstadisticasTexto sessions={sessions} />
       <CalendarioTomas sessions={sessions} onChangeFecha={handleChangeFecha} />
 
       <div className="text-sm text-left text-gray-700 mt-2 mb-4">
@@ -203,7 +204,6 @@ const Home = () => {
         </p>
       </div>
 
-      <EstadisticasTexto sessions={sessions} />
       <GraficosEstadisticas sessions={sessions} />
 
       <div className="text-left mt-6">
