@@ -111,6 +111,16 @@ const Home = () => {
   const ultimoLado = sessions[0]?.side || "—";
   const ultimaNota = sessions.find((s) => s.note)?.note || "—";
 
+  const totalTomasDelDia = sesionesFiltradas.length;
+  const promDuracionDelDia = totalTomasDelDia > 0
+    ? formatTime(
+        Math.floor(
+          sesionesFiltradas.reduce((sum, s) => sum + (s.duration || 0), 0) /
+            totalTomasDelDia
+        )
+      )
+    : "00:00";
+
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
       <button
@@ -184,10 +194,16 @@ const Home = () => {
 
       <GraficosEstadisticas sessions={sessions} />
 
-      
       <CalendarioTomas onChangeFecha={setFechaFiltro} sessions={sessions} />
 
-      
+      <div className="bg-pink-50 p-3 rounded-lg mb-6 shadow-sm">
+        <h3 className="text-sm text-gray-700 mb-1 font-semibold">Resumen del día</h3>
+        <div className="text-sm">
+          🍼 Tomas: <strong>{totalTomasDelDia}</strong><br />
+          ⏱️ Promedio: <strong>{promDuracionDelDia}</strong>
+        </div>
+      </div>
+
       <div className="text-left">
         <h2 className="text-lg font-semibold mb-2">
           Tomas del {fechaFiltro.toLocaleDateString()}
@@ -204,7 +220,7 @@ const Home = () => {
                   ).toLocaleString()}
                 </div>
                 <div>
-                 ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                 ⏱️ {formatTime(s.duration)} – 🧁 {s.side}
                 </div>
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
@@ -221,3 +237,4 @@ const Home = () => {
 };
 
 export default Home;
+
