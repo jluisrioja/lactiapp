@@ -93,6 +93,19 @@ const Home = () => {
     }
   };
 
+  const handleRegistrarPanial = async () => {
+    if (!user) return;
+
+    try {
+      await addDoc(collection(db, "usuarios", user.uid, "panales"), {
+        timestamp: new Date(),
+      });
+      console.log("Cambio de pañal registrado ✅");
+    } catch (error) {
+      console.error("Error al registrar pañal:", error);
+    }
+  };
+
   const handleChangeFecha = (fecha) => {
     setFechaSeleccionada(fecha);
   };
@@ -183,9 +196,16 @@ const Home = () => {
 
       <button
         onClick={() => setMostrarManual(true)}
-        className="w-full bg-blue-200 text-blue-800 py-2 rounded mb-6"
+        className="w-full bg-blue-200 text-blue-800 py-2 rounded mb-4"
       >
         Registro manual
+      </button>
+
+      <button
+        onClick={handleRegistrarPanial}
+        className="w-full bg-yellow-100 text-yellow-800 py-2 rounded mb-6 hover:bg-yellow-200"
+      >
+        Registrar cambio de pañal 🧷
       </button>
 
       {mostrarManual && (
@@ -205,7 +225,6 @@ const Home = () => {
       </div>
 
       <GraficosEstadisticas sessions={sessions} fechaReferencia={fechaSeleccionada} />
-
 
       <div className="text-left mt-6">
         <h2 className="text-lg font-semibold mb-2">
