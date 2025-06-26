@@ -17,7 +17,7 @@ const RegistroManual = ({ user, onClose }) => {
     try {
       await addDoc(collection(db, "usuarios", user.uid, "tomas"), {
         timestamp: manualFecha,
-        duration: manualDuracion,
+        duration: manualDuracion * 60, // Convertir minutos a segundos
         side: manualSide,
         note: manualNote,
       });
@@ -45,7 +45,7 @@ const RegistroManual = ({ user, onClose }) => {
         onChange={(e) => setManualFecha(new Date(e.target.value))}
       />
 
-      <label className="block text-sm mb-1">Duración (segundos):</label>
+      <label className="block text-sm mb-1">Duración (minutos):</label>
       <input
         type="number"
         className="w-full mb-2 border rounded px-2 py-1"
