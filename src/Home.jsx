@@ -8,8 +8,8 @@ import {
   query,
   orderBy,
   onSnapshot,
-  doc,
   updateDoc,
+  doc,
 } from "firebase/firestore";
 
 import EstadisticasTexto from "./components/EstadisticasTexto";
@@ -25,8 +25,7 @@ const Home = () => {
   const [sessions, setSessions] = useState([]);
   const [mostrarManual, setMostrarManual] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
-  const [nuevaDuracion, setNuevaDuracion] = useState("");
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
+  const [nuevaDuracion, setNuevaDuracion] = useState(0);
 
   const navigate = useNavigate();
   const user = auth.currentUser;
@@ -44,14 +43,20 @@ const Home = () => {
 
   useEffect(() => {
     if (!user) return;
+
     const q = query(
       collection(db, "usuarios", user.uid, "tomas"),
       orderBy("timestamp", "desc")
     );
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setSessions(data);
     });
+
     return () => unsubscribe();
   }, [user]);
 
@@ -73,12 +78,14 @@ const Home = () => {
 
   const handleSave = async () => {
     if (time === 0 || !user) return;
+
     const newSession = {
       duration: time,
       side,
       note,
       timestamp: new Date(),
     };
+
     try {
       await addDoc(collection(db, "usuarios", user.uid, "tomas"), newSession);
       setTime(0);
@@ -89,39 +96,29 @@ const Home = () => {
     }
   };
 
-  const handleEditarDuracion = (id, currentDuration) => {
-    setEditandoId(id);
-    setNuevaDuracion(Math.floor(currentDuration / 60));
-  };
-
-  const guardarNuevaDuracion = async (id) => {
-    const ref = doc(db, "usuarios", user.uid, "tomas", id);
+  const handleUpdateDuration = async (id) => {
+    if (!user || nuevaDuracion <= 0) return;
     try {
-      await updateDoc(ref, { duration: Number(nuevaDuracion) * 60 });
+      const ref = doc(db, "usuarios", user.uid, "tomas", id);
+      await updateDoc(ref, { duration: nuevaDuracion * 60 });
       setEditandoId(null);
-    } catch (err) {
-      console.error("Error actualizando duración:", err);
+    } catch (error) {
+      console.error("Error al actualizar duración:", error);
     }
   };
 
-  const sesionesFiltradas = useMemo(() => {
-    return sessions.filter((s) => {
-      const fechaToma = new Date((s.timestamp?.seconds || 0) * 1000);
-      return (
-        fechaToma.toDateString() === fechaSeleccionada.toDateString()
-      );
-    });
-  }, [sessions, fechaSeleccionada]);
-
-  const totalTomas = sesionesFiltradas.length;
+  const totalTomas = sessions.length;
   const promDuracion =
     totalTomas > 0
       ? formatTime(
           Math.floor(
-            sesionesFiltradas.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
+            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) /
+              totalTomas
           )
         )
       : "00:00";
+  const ultimoLado = sessions[0]?.side || "—";
+  const ultimaNota = sessions.find((s) => s.note)?.note || "—";
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
@@ -187,95 +184,83 @@ const Home = () => {
       <button
         onClick={handleSave}
         disabled={time === 0}
-        className="w-full bg-green-500 text-white py-2 rounded mb-4 disabled:opacity-50"
+        className="w-full bg-green-500 text-white py-2 rounded mb-6 disabled:opacity-50"
       >
         Registrar toma
       </button>
 
       <button
         onClick={() => setMostrarManual(true)}
-        className="text-sm text-blue-600 mb-4"
+        className="w-full bg-blue-200 text-blue-800 py-2 rounded mb-6"
       >
-        Registrar manualmente
+        Registro manual
       </button>
 
       {mostrarManual && (
         <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
       )}
 
-      <CalendarioTomas
-        fechaSeleccionada={fechaSeleccionada}
-        setFechaSeleccionada={setFechaSeleccionada}
-        sesiones={sessions}
-      />
+      <CalendarioTomas sesiones={sessions} />
+      <EstadisticasTexto sessions={sessions} />
+      <GraficosEstadisticas sessions={sessions} />
 
-      <div className="mb-4 text-left">
-        <p className="text-sm text-gray-600">
-          <strong>{totalTomas}</strong> tomas registradas el {fechaSeleccionada.toLocaleDateString()}
-        </p>
-        <p className="text-sm text-gray-600">
-          Promedio: <strong>{promDuracion}</strong>
-        </p>
-      </div>
-
-      <EstadisticasTexto sessions={sesionesFiltradas} />
-
-      <GraficosEstadisticas sessions={sesionesFiltradas} />
-
-      <div className="text-left">
+      <div className="text-left mt-6">
         <h2 className="text-lg font-semibold mb-2">Historial</h2>
-        {sesionesFiltradas.length === 0 ? (
-          <p className="text-gray-500">Aún no hay tomas registradas.</p>
-        ) : (
+        {Array.isArray(sessions) && sessions.length > 0 ? (
           <ul className="space-y-3">
-            {sesionesFiltradas.map((s) => (
+            {sessions.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">
-                  {new Date((s.timestamp.seconds || 0) * 1000).toLocaleString()}
+                  {new Date(
+                    (s.timestamp?.seconds || 0) * 1000
+                  ).toLocaleString()}
                 </div>
-
-                {editandoId === s.id ? (
-                  <div className="flex gap-2 items-center my-2">
-                    <input
-                      type="number"
-                      className="border rounded px-2 py-1 w-20"
-                      value={nuevaDuracion}
-                      onChange={(e) => setNuevaDuracion(e.target.value)}
-                    />
-                    <span>min</span>
-                    <button
-                      onClick={() => guardarNuevaDuracion(s.id)}
-                      className="text-green-600 text-sm font-medium"
-                    >
-                      Guardar
-                    </button>
-                    <button
-                      onClick={() => setEditandoId(null)}
-                      className="text-gray-500 text-sm"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
-                    <button
-                      onClick={() => handleEditarDuracion(s.id, s.duration)}
-                      className="ml-2 text-sm text-blue-600"
-                    >
-                      Editar
-                    </button>
-                  </div>
-                )}
-
+                <div>
+                  ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                </div>
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
                     “{s.note}”
                   </blockquote>
                 )}
+                {editandoId === s.id ? (
+                  <div className="mt-2">
+                    <input
+                      type="number"
+                      className="border rounded px-2 py-1 w-24 mr-2"
+                      value={nuevaDuracion}
+                      onChange={(e) => setNuevaDuracion(Number(e.target.value))}
+                      placeholder="Minutos"
+                    />
+                    <button
+                      onClick={() => handleUpdateDuration(s.id)}
+                      className="bg-green-600 text-white px-3 py-1 rounded mr-2"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => setEditandoId(null)}
+                      className="bg-gray-400 text-white px-3 py-1 rounded"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setEditandoId(s.id);
+                      setNuevaDuracion(Math.floor((s.duration || 0) / 60));
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:underline"
+                  >
+                    Editar duración
+                  </button>
+                )}
               </li>
             ))}
           </ul>
+        ) : (
+          <p className="text-gray-500">Aún no hay tomas registradas.</p>
         )}
       </div>
     </div>
