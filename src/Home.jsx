@@ -17,6 +17,7 @@ import CalendarioTomas from "./components/CalendarioTomas";
 const Home = () => {
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
+  const [startTime, setStartTime] = useState(null);
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
@@ -59,12 +60,18 @@ const Home = () => {
   useEffect(() => {
     let interval;
     if (running) {
-      interval = setInterval(() => setTime((t) => t + 1), 1000);
+      if (!startTime) setStartTime(Date.now());
+
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setTime(elapsed);
+      }, 1000);
     } else {
       clearInterval(interval);
     }
+
     return () => clearInterval(interval);
-  }, [running]);
+  }, [running, startTime]);
 
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
@@ -87,6 +94,7 @@ const Home = () => {
       setTime(0);
       setNote("");
       setRunning(false);
+      setStartTime(null);
     } catch (error) {
       console.error("Error al guardar en Firestore:", error);
     }
@@ -149,7 +157,10 @@ const Home = () => {
 
       <div className="flex justify-center gap-4 mb-4">
         <button
-          onClick={() => setRunning(!running)}
+          onClick={() => {
+            setRunning(!running);
+            if (!running) setStartTime(Date.now());
+          }}
           className="px-4 py-2 bg-pink-500 text-white rounded-full"
         >
           {running ? "Detener" : "Iniciar"}
@@ -158,6 +169,7 @@ const Home = () => {
           onClick={() => {
             setRunning(false);
             setTime(0);
+            setStartTime(null);
           }}
           className="px-4 py-2 bg-gray-300 text-black rounded-full"
         >
@@ -237,4 +249,3 @@ const Home = () => {
 };
 
 export default Home;
-
