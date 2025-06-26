@@ -13,6 +13,7 @@ import {
 import EstadisticasTexto from "./components/EstadisticasTexto";
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
 import CalendarioTomas from "./components/CalendarioTomas";
+import RegistroManual from "./components/RegistroManual";
 
 const Home = () => {
   const [time, setTime] = useState(0);
@@ -22,6 +23,7 @@ const Home = () => {
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
   const [fechaFiltro, setFechaFiltro] = useState(new Date());
+  const [mostrarManual, setMostrarManual] = useState(false);
 
   const navigate = useNavigate();
 
@@ -197,10 +199,21 @@ const Home = () => {
       <button
         onClick={handleSave}
         disabled={time === 0}
-        className="w-full bg-green-500 text-white py-2 rounded mb-6 disabled:opacity-50"
+        className="w-full bg-green-500 text-white py-2 rounded mb-4 disabled:opacity-50"
       >
         Registrar toma
       </button>
+
+      <button
+        onClick={() => setMostrarManual(true)}
+        className="w-full bg-blue-100 text-blue-700 py-2 rounded mb-4"
+      >
+        Registrar manualmente
+      </button>
+
+      {mostrarManual && (
+        <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
+      )}
 
       <EstadisticasTexto sessions={sessions} />
 
