@@ -6,6 +6,7 @@ import { auth } from "./firebase";
 import Home from "./Home.jsx";
 import Login from "./Login.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
+import { Analytics } from '@vercel/analytics/react'; // <-- aquí
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -40,6 +41,8 @@ const App = () => {
         />
         <Route path="/login" element={<Login />} />
       </Routes>
+
+      <Analytics /> {/* <-- aquí */}
     </Router>
   );
 };

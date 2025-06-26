@@ -11,9 +11,8 @@ import {
 } from "firebase/firestore";
 
 import EstadisticasTexto from "./components/EstadisticasTexto";
-//import GraficosEstadisticas from "./components/GraficosEstadisticas";
-
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
+import CalendarioTomas from "./components/CalendarioTomas";
 
 const Home = () => {
   const [time, setTime] = useState(0);
@@ -21,6 +20,7 @@ const Home = () => {
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
+  const [fechaFiltro, setFechaFiltro] = useState(new Date());
 
   const navigate = useNavigate();
 
@@ -91,6 +91,13 @@ const Home = () => {
       console.error("Error al guardar en Firestore:", error);
     }
   };
+
+  const sesionesFiltradas = useMemo(() => {
+    return sessions.filter((s) => {
+      const fechaToma = new Date(s.timestamp.seconds * 1000);
+      return fechaToma.toDateString() === fechaFiltro.toDateString();
+    });
+  }, [sessions, fechaFiltro]);
 
   const totalTomas = sessions.length;
   const promDuracion =
@@ -177,13 +184,17 @@ const Home = () => {
 
       <GraficosEstadisticas sessions={sessions} />
 
+      <CalendarioTomas onChangeFecha={setFechaFiltro} />
+
       <div className="text-left">
-        <h2 className="text-lg font-semibold mb-2">Historial</h2>
-        {sessions.length === 0 ? (
+        <h2 className="text-lg font-semibold mb-2">
+          Tomas del {fechaFiltro.toLocaleDateString()}
+        </h2>
+        {sesionesFiltradas.length === 0 ? (
           <p className="text-gray-500">Aún no hay tomas registradas.</p>
         ) : (
           <ul className="space-y-3">
-            {sessions.map((s) => (
+            {sesionesFiltradas.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">
                   {new Date(
