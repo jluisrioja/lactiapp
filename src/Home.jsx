@@ -22,6 +22,7 @@ const Home = () => {
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
   const [mostrarManual, setMostrarManual] = useState(false);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
 
   const navigate = useNavigate();
   const user = auth.currentUser;
@@ -91,6 +92,25 @@ const Home = () => {
       console.error("Error al guardar en Firestore:", error);
     }
   };
+
+  const handleChangeFecha = (fecha) => {
+    setFechaSeleccionada(fecha);
+  };
+
+  const tomasDelDia = sessions.filter((s) => {
+    const fechaToma = new Date((s.timestamp?.seconds || 0) * 1000);
+    return fechaToma.toDateString() === fechaSeleccionada.toDateString();
+  });
+
+  const promedioDelDia =
+    tomasDelDia.length > 0
+      ? formatTime(
+          Math.floor(
+            tomasDelDia.reduce((acc, cur) => acc + (cur.duration || 0), 0) /
+              tomasDelDia.length
+          )
+        )
+      : "00:00";
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
@@ -172,7 +192,17 @@ const Home = () => {
         <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
       )}
 
-      <CalendarioTomas sesiones={sessions} />
+      <CalendarioTomas sessions={sessions} onChangeFecha={handleChangeFecha} />
+
+      <div className="text-sm text-left text-gray-700 mt-2 mb-4">
+        <p>
+          <strong>Tomas ese día:</strong> {tomasDelDia.length}
+        </p>
+        <p>
+          <strong>Promedio:</strong> {promedioDelDia}
+        </p>
+      </div>
+
       <EstadisticasTexto sessions={sessions} />
       <GraficosEstadisticas sessions={sessions} />
 
