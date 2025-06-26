@@ -8,6 +8,8 @@ import {
   query,
   orderBy,
   onSnapshot,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 
 import EstadisticasTexto from "./components/EstadisticasTexto";
@@ -18,15 +20,15 @@ import RegistroManual from "./components/RegistroManual";
 const Home = () => {
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
-  const [startTime, setStartTime] = useState(null);
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
-  const [fechaFiltro, setFechaFiltro] = useState(new Date());
   const [mostrarManual, setMostrarManual] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
+  const [nuevaDuracion, setNuevaDuracion] = useState("");
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
 
   const navigate = useNavigate();
-
   const user = auth.currentUser;
   const displayName = user?.displayName || "Usuario";
   const photoURL = user?.photoURL;
@@ -42,38 +44,26 @@ const Home = () => {
 
   useEffect(() => {
     if (!user) return;
-
     const q = query(
       collection(db, "usuarios", user.uid, "tomas"),
       orderBy("timestamp", "desc")
     );
-
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setSessions(data);
     });
-
     return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {
     let interval;
     if (running) {
-      if (!startTime) setStartTime(Date.now());
-
-      interval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setTime(elapsed);
-      }, 1000);
+      interval = setInterval(() => setTime((t) => t + 1), 1000);
     } else {
       clearInterval(interval);
     }
-
     return () => clearInterval(interval);
-  }, [running, startTime]);
+  }, [running]);
 
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
@@ -83,53 +73,55 @@ const Home = () => {
 
   const handleSave = async () => {
     if (time === 0 || !user) return;
-
     const newSession = {
       duration: time,
       side,
       note,
       timestamp: new Date(),
     };
-
     try {
       await addDoc(collection(db, "usuarios", user.uid, "tomas"), newSession);
       setTime(0);
       setNote("");
       setRunning(false);
-      setStartTime(null);
     } catch (error) {
       console.error("Error al guardar en Firestore:", error);
     }
   };
 
+  const handleEditarDuracion = (id, currentDuration) => {
+    setEditandoId(id);
+    setNuevaDuracion(Math.floor(currentDuration / 60));
+  };
+
+  const guardarNuevaDuracion = async (id) => {
+    const ref = doc(db, "usuarios", user.uid, "tomas", id);
+    try {
+      await updateDoc(ref, { duration: Number(nuevaDuracion) * 60 });
+      setEditandoId(null);
+    } catch (err) {
+      console.error("Error actualizando duración:", err);
+    }
+  };
+
   const sesionesFiltradas = useMemo(() => {
     return sessions.filter((s) => {
-      const fechaToma = new Date(s.timestamp.seconds * 1000);
-      return fechaToma.toDateString() === fechaFiltro.toDateString();
+      const fechaToma = new Date((s.timestamp?.seconds || 0) * 1000);
+      return (
+        fechaToma.toDateString() === fechaSeleccionada.toDateString()
+      );
     });
-  }, [sessions, fechaFiltro]);
+  }, [sessions, fechaSeleccionada]);
 
-  const totalTomas = sessions.length;
+  const totalTomas = sesionesFiltradas.length;
   const promDuracion =
     totalTomas > 0
       ? formatTime(
           Math.floor(
-            sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
+            sesionesFiltradas.reduce((sum, s) => sum + (s.duration || 0), 0) / totalTomas
           )
         )
       : "00:00";
-  const ultimoLado = sessions[0]?.side || "—";
-  const ultimaNota = sessions.find((s) => s.note)?.note || "—";
-
-  const totalTomasDelDia = sesionesFiltradas.length;
-  const promDuracionDelDia = totalTomasDelDia > 0
-    ? formatTime(
-        Math.floor(
-          sesionesFiltradas.reduce((sum, s) => sum + (s.duration || 0), 0) /
-            totalTomasDelDia
-        )
-      )
-    : "00:00";
 
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
@@ -159,10 +151,7 @@ const Home = () => {
 
       <div className="flex justify-center gap-4 mb-4">
         <button
-          onClick={() => {
-            setRunning(!running);
-            if (!running) setStartTime(Date.now());
-          }}
+          onClick={() => setRunning(!running)}
           className="px-4 py-2 bg-pink-500 text-white rounded-full"
         >
           {running ? "Detener" : "Iniciar"}
@@ -171,7 +160,6 @@ const Home = () => {
           onClick={() => {
             setRunning(false);
             setTime(0);
-            setStartTime(null);
           }}
           className="px-4 py-2 bg-gray-300 text-black rounded-full"
         >
@@ -206,7 +194,7 @@ const Home = () => {
 
       <button
         onClick={() => setMostrarManual(true)}
-        className="w-full bg-blue-100 text-blue-700 py-2 rounded mb-4"
+        className="text-sm text-blue-600 mb-4"
       >
         Registrar manualmente
       </button>
@@ -215,24 +203,27 @@ const Home = () => {
         <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
       )}
 
-      <EstadisticasTexto sessions={sessions} />
+      <CalendarioTomas
+        fechaSeleccionada={fechaSeleccionada}
+        setFechaSeleccionada={setFechaSeleccionada}
+        sesiones={sessions}
+      />
 
-      <GraficosEstadisticas sessions={sessions} />
-
-      <CalendarioTomas onChangeFecha={setFechaFiltro} sessions={sessions} />
-
-      <div className="bg-pink-50 p-3 rounded-lg mb-6 shadow-sm">
-        <h3 className="text-sm text-gray-700 mb-1 font-semibold">Resumen del día</h3>
-        <div className="text-sm">
-          🍼 Tomas: <strong>{totalTomasDelDia}</strong><br />
-          ⏱️ Promedio: <strong>{promDuracionDelDia}</strong>
-        </div>
+      <div className="mb-4 text-left">
+        <p className="text-sm text-gray-600">
+          <strong>{totalTomas}</strong> tomas registradas el {fechaSeleccionada.toLocaleDateString()}
+        </p>
+        <p className="text-sm text-gray-600">
+          Promedio: <strong>{promDuracion}</strong>
+        </p>
       </div>
 
+      <EstadisticasTexto sessions={sesionesFiltradas} />
+
+      <GraficosEstadisticas sessions={sesionesFiltradas} />
+
       <div className="text-left">
-        <h2 className="text-lg font-semibold mb-2">
-          Tomas del {fechaFiltro.toLocaleDateString()}
-        </h2>
+        <h2 className="text-lg font-semibold mb-2">Historial</h2>
         {sesionesFiltradas.length === 0 ? (
           <p className="text-gray-500">Aún no hay tomas registradas.</p>
         ) : (
@@ -240,13 +231,43 @@ const Home = () => {
             {sesionesFiltradas.map((s) => (
               <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
                 <div className="text-sm font-bold">
-                  {new Date(
-                    (s.timestamp.seconds || 0) * 1000
-                  ).toLocaleString()}
+                  {new Date((s.timestamp.seconds || 0) * 1000).toLocaleString()}
                 </div>
-                <div>
-                 ⏱️ {formatTime(s.duration)} – 🧁 {s.side}
-                </div>
+
+                {editandoId === s.id ? (
+                  <div className="flex gap-2 items-center my-2">
+                    <input
+                      type="number"
+                      className="border rounded px-2 py-1 w-20"
+                      value={nuevaDuracion}
+                      onChange={(e) => setNuevaDuracion(e.target.value)}
+                    />
+                    <span>min</span>
+                    <button
+                      onClick={() => guardarNuevaDuracion(s.id)}
+                      className="text-green-600 text-sm font-medium"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => setEditandoId(null)}
+                      className="text-gray-500 text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                    <button
+                      onClick={() => handleEditarDuracion(s.id, s.duration)}
+                      className="ml-2 text-sm text-blue-600"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+
                 {s.note && (
                   <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
                     “{s.note}”
