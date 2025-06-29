@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList,
 } from "recharts";
-import { format, subDays, isSameDay } from "date-fns";
+import { format, subDays, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
@@ -15,16 +15,17 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
     ladoCounts,
     panalesPorDia,
   } = useMemo(() => {
-    const referencia = fechaReferencia || new Date();
-    const dias = Array.from({ length: 6 }).map((_, i) =>
-      subDays(referencia, 5 - i)
-    );
+    const hoy = startOfDay(fechaReferencia || new Date());
+    const hace5dias = startOfDay(subDays(hoy, 5));
 
-    const keyList = dias.map((d) => format(d, "dd-MMM", { locale: es }));
-    const minutosMap = Object.fromEntries(keyList.map((k) => [k, null]));
-    const cantidadMap = Object.fromEntries(keyList.map((k) => [k, null]));
-    const panalMap = Object.fromEntries(keyList.map((k) => [k, 0]));
+    const dias = Array.from({ length: 6 }, (_, i) => {
+      const date = subDays(hoy, 5 - i);
+      return format(date, "dd-MMM", { locale: es });
+    });
 
+    const minutosMap = Object.fromEntries(dias.map((d) => [d, null]));
+    const cantidadMap = Object.fromEntries(dias.map((d) => [d, null]));
+    const panalMap = Object.fromEntries(dias.map((d) => [d, null]));
     const sideMap = { izquierdo: 0, derecho: 0, ambos: 0 };
 
     sessions.forEach(({ duration = 0, timestamp, side }) => {
@@ -32,14 +33,17 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      dias.forEach((d) => {
-        if (isSameDay(fecha, d)) {
-          const key = format(d, "dd-MMM", { locale: es });
-          minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
-          cantidadMap[key] = (cantidadMap[key] || 0) + 1;
-          sideMap[side] = (sideMap[side] || 0) + 1;
-        }
-      });
+      if (
+        isWithinInterval(fecha, {
+          start: hace5dias,
+          end: endOfDay(hoy),
+        })
+      ) {
+        const key = format(startOfDay(fecha), "dd-MMM", { locale: es });
+        minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
+        cantidadMap[key] = (cantidadMap[key] || 0) + 1;
+        sideMap[side] = (sideMap[side] || 0) + 1;
+      }
     });
 
     panales.forEach(({ timestamp }) => {
@@ -47,27 +51,30 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      dias.forEach((d) => {
-        if (isSameDay(fecha, d)) {
-          const key = format(d, "dd-MMM", { locale: es });
-          panalMap[key] = (panalMap[key] || 0) + 1;
-        }
-      });
+      if (
+        isWithinInterval(fecha, {
+          start: hace5dias,
+          end: endOfDay(hoy),
+        })
+      ) {
+        const key = format(startOfDay(fecha), "dd-MMM", { locale: es });
+        panalMap[key] = (panalMap[key] || 0) + 1;
+      }
     });
 
-    const porDiaMin = keyList.map((day) => ({
-      day,
-      value: minutosMap[day] !== null ? Math.round(minutosMap[day]) : null,
+    const porDiaMin = dias.map((d) => ({
+      day: d,
+      value: minutosMap[d],
     }));
 
-    const porDiaCantidad = keyList.map((day) => ({
-      day,
-      value: cantidadMap[day] !== null ? cantidadMap[day] : null,
+    const porDiaCantidad = dias.map((d) => ({
+      day: d,
+      value: cantidadMap[d],
     }));
 
-    const panalesPorDia = keyList.map((day) => ({
-      day,
-      value: panalMap[day],
+    const panalesPorDia = dias.map((d) => ({
+      day: d,
+      value: panalMap[d],
     }));
 
     const ladoCounts = Object.entries(sideMap).map(([name, value]) => ({
@@ -81,12 +88,14 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
   const colores = ["#ec4899", "#f9a8d4", "#fda4af"];
   const datos = modo === "minutos" ? porDiaMin : porDiaCantidad;
   const etiqueta = modo === "minutos" ? "min" : "tomas";
-  const titulo = modo === "minutos"
-    ? "Minutos de lactancia por día"
-    : "Cantidad de tomas por día";
+  const titulo =
+    modo === "minutos"
+      ? "Minutos de lactancia por día"
+      : "Cantidad de tomas por día";
 
   return (
     <div className="space-y-8">
+      {/* Gráfico de lactancia */}
       <div className="w-full h-72">
         <div className="flex justify-between items-center mb-2 px-2">
           <h3 className="text-center font-semibold">{titulo}</h3>
@@ -111,20 +120,23 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
             />
             <YAxis />
             <Tooltip
-              formatter={(v) => (v !== null ? `${v} ${etiqueta}` : "ND")}
+              formatter={(v) =>
+                v == null ? "No disponible" : `${Math.round(v)} ${etiqueta}`
+              }
             />
             <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]}>
               <LabelList
                 dataKey="value"
                 position="top"
+                formatter={(v) => (v == null ? "ND" : Math.round(v))}
                 fill="#000"
-                formatter={(v) => (v !== null ? v : "ND")}
               />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
+      {/* Gráfico de torta */}
       <div className="w-full h-72">
         <h3 className="text-center font-semibold mb-2">
           Distribución de tomas por lado
@@ -149,29 +161,37 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         </ResponsiveContainer>
       </div>
 
-      {panalesPorDia.length > 0 && (
-        <div className="w-full h-72">
-          <h3 className="text-center font-semibold mb-2">
-            Cambios de pañal por día
-          </h3>
-          <ResponsiveContainer>
-            <BarChart data={panalesPorDia} margin={{ top: 20, bottom: 30 }}>
-              <XAxis
-                dataKey="day"
-                angle={-25}
-                textAnchor="end"
-                interval={0}
-                height={50}
+      {/* Gráfico de pañales */}
+      <div className="w-full h-72">
+        <h3 className="text-center font-semibold mb-2">
+          Cambios de pañal por día
+        </h3>
+        <ResponsiveContainer>
+          <BarChart data={panalesPorDia} margin={{ top: 20, bottom: 30 }}>
+            <XAxis
+              dataKey="day"
+              angle={-25}
+              textAnchor="end"
+              interval={0}
+              height={50}
+            />
+            <YAxis />
+            <Tooltip
+              formatter={(v) =>
+                v == null ? "No disponible" : `${v} cambios`
+              }
+            />
+            <Bar dataKey="value" fill="#facc15" radius={[6, 6, 0, 0]}>
+              <LabelList
+                dataKey="value"
+                position="top"
+                formatter={(v) => (v == null ? "ND" : v)}
+                fill="#000"
               />
-              <YAxis />
-              <Tooltip formatter={(v) => `${v} cambios`} />
-              <Bar dataKey="value" fill="#facc15" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="value" position="top" fill="#000" />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
