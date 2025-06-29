@@ -3,11 +3,11 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList,
 } from "recharts";
-import { format, subDays } from "date-fns";
+import { format, subDays, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
-  const [modo, setModo] = useState("minutos"); // 'minutos' o 'cantidad'
+  const [modo, setModo] = useState("minutos");
 
   const {
     porDiaMin,
@@ -15,26 +15,31 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
     ladoCounts,
     panalesPorDia,
   } = useMemo(() => {
-    const hoy = fechaReferencia || new Date();
-    const hace6dias = subDays(hoy, 5);
+    const referencia = fechaReferencia || new Date();
+    const dias = Array.from({ length: 6 }).map((_, i) =>
+      subDays(referencia, 5 - i)
+    );
 
-    const minutosMap = {};
-    const cantidadMap = {};
+    const keyList = dias.map((d) => format(d, "dd-MMM", { locale: es }));
+    const minutosMap = Object.fromEntries(keyList.map((k) => [k, null]));
+    const cantidadMap = Object.fromEntries(keyList.map((k) => [k, null]));
+    const panalMap = Object.fromEntries(keyList.map((k) => [k, 0]));
+
     const sideMap = { izquierdo: 0, derecho: 0, ambos: 0 };
-    const panalMap = {};
 
     sessions.forEach(({ duration = 0, timestamp, side }) => {
       const fecha = timestamp?.seconds
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      if (fecha >= hace6dias && fecha <= hoy) {
-        const key = format(fecha, "dd-MMM", { locale: es });
-
-        minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
-        cantidadMap[key] = (cantidadMap[key] || 0) + 1;
-        sideMap[side] = (sideMap[side] || 0) + 1;
-      }
+      dias.forEach((d) => {
+        if (isSameDay(fecha, d)) {
+          const key = format(d, "dd-MMM", { locale: es });
+          minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
+          cantidadMap[key] = (cantidadMap[key] || 0) + 1;
+          sideMap[side] = (sideMap[side] || 0) + 1;
+        }
+      });
     });
 
     panales.forEach(({ timestamp }) => {
@@ -42,25 +47,27 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      if (fecha >= hace6dias && fecha <= hoy) {
-        const key = format(fecha, "dd-MMM", { locale: es });
-        panalMap[key] = (panalMap[key] || 0) + 1;
-      }
+      dias.forEach((d) => {
+        if (isSameDay(fecha, d)) {
+          const key = format(d, "dd-MMM", { locale: es });
+          panalMap[key] = (panalMap[key] || 0) + 1;
+        }
+      });
     });
 
-    const porDiaMin = Object.entries(minutosMap).map(([day, min]) => ({
+    const porDiaMin = keyList.map((day) => ({
       day,
-      value: Math.round(min),
+      value: minutosMap[day] !== null ? Math.round(minutosMap[day]) : null,
     }));
 
-    const porDiaCantidad = Object.entries(cantidadMap).map(([day, count]) => ({
+    const porDiaCantidad = keyList.map((day) => ({
       day,
-      value: count,
+      value: cantidadMap[day] !== null ? cantidadMap[day] : null,
     }));
 
-    const panalesPorDia = Object.entries(panalMap).map(([day, count]) => ({
+    const panalesPorDia = keyList.map((day) => ({
       day,
-      value: count,
+      value: panalMap[day],
     }));
 
     const ladoCounts = Object.entries(sideMap).map(([name, value]) => ({
@@ -80,7 +87,6 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
 
   return (
     <div className="space-y-8">
-      {/* Toggle y gráfico de barras de lactancia */}
       <div className="w-full h-72">
         <div className="flex justify-between items-center mb-2 px-2">
           <h3 className="text-center font-semibold">{titulo}</h3>
@@ -104,15 +110,21 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
               height={50}
             />
             <YAxis />
-            <Tooltip formatter={(v) => `${v} ${etiqueta}`} />
+            <Tooltip
+              formatter={(v) => (v !== null ? `${v} ${etiqueta}` : "ND")}
+            />
             <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]}>
-              <LabelList dataKey="value" position="top" fill="#000" />
+              <LabelList
+                dataKey="value"
+                position="top"
+                fill="#000"
+                formatter={(v) => (v !== null ? v : "ND")}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Gráfico de torta de lados */}
       <div className="w-full h-72">
         <h3 className="text-center font-semibold mb-2">
           Distribución de tomas por lado
@@ -137,7 +149,6 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Gráfico de cambios de pañal */}
       {panalesPorDia.length > 0 && (
         <div className="w-full h-72">
           <h3 className="text-center font-semibold mb-2">
