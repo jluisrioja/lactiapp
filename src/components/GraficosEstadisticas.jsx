@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList,
 } from "recharts";
-import { format, subDays, isAfter } from "date-fns";
+import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 
 const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
@@ -28,7 +28,7 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      if (isAfter(fecha, hace6dias)) {
+      if (fecha >= hace6dias && fecha <= hoy) {
         const key = format(fecha, "dd-MMM", { locale: es });
 
         minutosMap[key] = (minutosMap[key] || 0) + duration / 60;
@@ -42,7 +42,7 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         ? new Date(timestamp.seconds * 1000)
         : new Date(timestamp);
 
-      if (isAfter(fecha, hace6dias)) {
+      if (fecha >= hace6dias && fecha <= hoy) {
         const key = format(fecha, "dd-MMM", { locale: es });
         panalMap[key] = (panalMap[key] || 0) + 1;
       }
@@ -137,7 +137,7 @@ const GraficosEstadisticas = ({ sessions, panales = [], fechaReferencia }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Nuevo gráfico de cambios de pañal */}
+      {/* Gráfico de cambios de pañal */}
       {panalesPorDia.length > 0 && (
         <div className="w-full h-72">
           <h3 className="text-center font-semibold mb-2">
