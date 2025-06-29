@@ -18,9 +18,11 @@ import RegistroManual from "./components/RegistroManual";
 const Home = () => {
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
+  const [startTime, setStartTime] = useState(null); // ✅ NUEVO
   const [side, setSide] = useState("izquierdo");
   const [note, setNote] = useState("");
   const [sessions, setSessions] = useState([]);
+  const [panales, setPanales] = useState([]);
   const [mostrarManual, setMostrarManual] = useState(false);
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
 
@@ -58,6 +60,40 @@ const Home = () => {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "usuarios", user.uid, "panales"),
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPanales(data);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("lactiapp_toma");
+    if (saved) {
+      const { startTime, side: s, note: n, running } = JSON.parse(saved);
+      if (running && startTime) {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setTime(elapsed);
+        setRunning(true);
+        setSide(s);
+        setNote(n);
+        setStartTime(startTime);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     let interval;
     if (running) {
       interval = setInterval(() => setTime((t) => t + 1), 1000);
@@ -88,9 +124,27 @@ const Home = () => {
       setTime(0);
       setNote("");
       setRunning(false);
+      setStartTime(null);
+      localStorage.removeItem("lactiapp_toma"); // ✅ LIMPIA LOCALSTORAGE
     } catch (error) {
       console.error("Error al guardar en Firestore:", error);
     }
+  };
+
+  const handleStartStop = () => {
+    if (!running) {
+      const now = Date.now();
+      setStartTime(now);
+      localStorage.setItem("lactiapp_toma", JSON.stringify({
+        startTime: now,
+        side,
+        note,
+        running: true
+      }));
+    } else {
+      localStorage.removeItem("lactiapp_toma");
+    }
+    setRunning(!running);
   };
 
   const handleRegistrarPanial = async () => {
@@ -153,7 +207,7 @@ const Home = () => {
 
       <div className="flex justify-center gap-4 mb-4">
         <button
-          onClick={() => setRunning(!running)}
+          onClick={handleStartStop}
           className="px-4 py-2 bg-pink-500 text-white rounded-full"
         >
           {running ? "Detener" : "Iniciar"}
@@ -162,6 +216,8 @@ const Home = () => {
           onClick={() => {
             setRunning(false);
             setTime(0);
+            setStartTime(null);
+            localStorage.removeItem("lactiapp_toma");
           }}
           className="px-4 py-2 bg-gray-300 text-black rounded-full"
         >
@@ -224,7 +280,11 @@ const Home = () => {
         </p>
       </div>
 
-      <GraficosEstadisticas sessions={sessions} fechaReferencia={fechaSeleccionada} />
+      <GraficosEstadisticas
+        sessions={sessions}
+        panales={panales}
+        fechaReferencia={fechaSeleccionada}
+      />
 
       <div className="text-left mt-6">
         <h2 className="text-lg font-semibold mb-2">
