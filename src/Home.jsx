@@ -9,6 +9,7 @@ import {
   orderBy,
   onSnapshot,
   updateDoc,
+  deleteDoc,
   doc,
 } from "firebase/firestore";
 
@@ -158,9 +159,26 @@ const Home = () => {
       await addDoc(collection(db, "usuarios", user.uid, "panales"), {
         timestamp: new Date(),
       });
-      console.log("Cambio de pañal registrado ✅");
     } catch (error) {
       console.error("Error al registrar pañal:", error);
+    }
+  };
+
+  const handleDeleteToma = async (id) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, "usuarios", user.uid, "tomas", id));
+    } catch (error) {
+      console.error("Error al borrar toma:", error);
+    }
+  };
+
+  const handleDeletePanial = async (id) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, "usuarios", user.uid, "panales", id));
+    } catch (error) {
+      console.error("Error al borrar pañal:", error);
     }
   };
 
@@ -200,6 +218,11 @@ const Home = () => {
   const tomasDelDia = sessions.filter((s) => {
     const fechaToma = new Date((s.timestamp?.seconds || 0) * 1000);
     return fechaToma.toDateString() === fechaSeleccionada.toDateString();
+  });
+
+  const panalesDelDia = panales.filter((p) => {
+    const fecha = new Date((p.timestamp?.seconds || 0) * 1000);
+    return fecha.toDateString() === fechaSeleccionada.toDateString();
   });
 
   const promedioDelDia =
@@ -385,14 +408,45 @@ const Home = () => {
                         “{s.note}”
                       </blockquote>
                     )}
-                    <button
-                      onClick={() => handleEditClick(s)}
-                      className="text-xs mt-2 text-blue-600 hover:underline"
-                    >
-                      ✏️ Editar
-                    </button>
+                    <div className="flex gap-4 mt-2">
+                      <button
+                        onClick={() => handleEditClick(s)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteToma(s.id)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        🗑️ Borrar
+                      </button>
+                    </div>
                   </>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="text-left mt-10">
+        <h2 className="text-lg font-semibold mb-2">Historial de pañales 🧷</h2>
+        {panalesDelDia.length === 0 ? (
+          <p className="text-gray-500">Aún no hay cambios de pañal ese día.</p>
+        ) : (
+          <ul className="space-y-3">
+            {panalesDelDia.map((p) => (
+              <li key={p.id} className="bg-yellow-50 p-3 rounded shadow-sm flex justify-between items-center">
+                <span>
+                  {new Date((p.timestamp?.seconds || 0) * 1000).toLocaleString()}
+                </span>
+                <button
+                  onClick={() => handleDeletePanial(p.id)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  🗑️ Borrar
+                </button>
               </li>
             ))}
           </ul>
