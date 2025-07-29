@@ -98,15 +98,20 @@ const Home = () => {
     }
   }, []);
 
+ 
   useEffect(() => {
-    let interval;
-    if (running) {
-      interval = setInterval(() => setTime((t) => t + 1), 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [running]);
+  let interval;
+  if (running && startTime) {
+    interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setTime(elapsed);
+    }, 1000);
+  }
+  return () => clearInterval(interval);
+}, [running, startTime]);
+
+
+
 
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
