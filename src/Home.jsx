@@ -17,11 +17,8 @@ import EstadisticasTexto from "./components/EstadisticasTexto";
 import GraficosEstadisticas from "./components/GraficosEstadisticas";
 import CalendarioTomas from "./components/CalendarioTomas";
 import RegistroManual from "./components/RegistroManual";
-import RegistroBebe from "./components/RegistroBebe";
 
 const Home = () => {
-  const [bebeId, setBebeId] = useState(null);
-  const [bebes, setBebes] = useState([]);
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -50,36 +47,41 @@ const Home = () => {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "bebes"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const bebesUser = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .filter((b) => b.miembros.includes(user.uid));
-      setBebes(bebesUser);
-      if (bebesUser.length > 0) setBebeId(bebesUser[0].id);
+
+    const q = query(
+      collection(db, "usuarios", user.uid, "tomas"),
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setSessions(data);
     });
+
     return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {
-    if (!user || !bebeId) return;
-    const q = query(collection(db, "bebes", bebeId, "tomas"), orderBy("timestamp", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setSessions(data);
-    });
-    return () => unsubscribe();
-  }, [user, bebeId]);
+    if (!user) return;
 
-  useEffect(() => {
-    if (!user || !bebeId) return;
-    const q = query(collection(db, "bebes", bebeId, "panales"), orderBy("timestamp", "desc"));
+    const q = query(
+      collection(db, "usuarios", user.uid, "panales"),
+      orderBy("timestamp", "desc")
+    );
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setPanales(data);
     });
+
     return () => unsubscribe();
-  }, [user, bebeId]);
+  }, [user]);
 
   useEffect(() => {
     const saved = localStorage.getItem("lactiapp_toma");
@@ -96,16 +98,20 @@ const Home = () => {
     }
   }, []);
 
+ 
   useEffect(() => {
-    let interval;
-    if (running && startTime) {
-      interval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setTime(elapsed);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [running, startTime]);
+  let interval;
+  if (running && startTime) {
+    interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setTime(elapsed);
+    }, 1000);
+  }
+  return () => clearInterval(interval);
+}, [running, startTime]);
+
+
+
 
   const formatTime = (s) => {
     const min = String(Math.floor(s / 60)).padStart(2, "0");
@@ -114,10 +120,17 @@ const Home = () => {
   };
 
   const handleSave = async () => {
-    if (time === 0 || !user || !bebeId) return;
-    const newSession = { duration: time, side, note, timestamp: new Date() };
+    if (time === 0 || !user) return;
+
+    const newSession = {
+      duration: time,
+      side,
+      note,
+      timestamp: new Date(),
+    };
+
     try {
-      await addDoc(collection(db, "bebes", bebeId, "tomas"), newSession);
+      await addDoc(collection(db, "usuarios", user.uid, "tomas"), newSession);
       setTime(0);
       setNote("");
       setRunning(false);
@@ -132,7 +145,12 @@ const Home = () => {
     if (!running) {
       const now = Date.now();
       setStartTime(now);
-      localStorage.setItem("lactiapp_toma", JSON.stringify({ startTime: now, side, note, running: true }));
+      localStorage.setItem("lactiapp_toma", JSON.stringify({
+        startTime: now,
+        side,
+        note,
+        running: true
+      }));
     } else {
       localStorage.removeItem("lactiapp_toma");
     }
@@ -140,37 +158,46 @@ const Home = () => {
   };
 
   const handleRegistrarPanial = async () => {
-    if (!user || !bebeId) return;
+    if (!user) return;
+
     try {
-      await addDoc(collection(db, "bebes", bebeId, "panales"), { timestamp: new Date() });
+      await addDoc(collection(db, "usuarios", user.uid, "panales"), {
+        timestamp: new Date(),
+      });
     } catch (error) {
       console.error("Error al registrar pañal:", error);
     }
   };
 
   const handleDeleteToma = async (id) => {
-    if (!user || !bebeId) return;
+    if (!user) return;
     try {
-      await deleteDoc(doc(db, "bebes", bebeId, "tomas", id));
+      await deleteDoc(doc(db, "usuarios", user.uid, "tomas", id));
     } catch (error) {
       console.error("Error al borrar toma:", error);
     }
   };
 
   const handleDeletePanial = async (id) => {
-    if (!user || !bebeId) return;
+    if (!user) return;
     try {
-      await deleteDoc(doc(db, "bebes", bebeId, "panales", id));
+      await deleteDoc(doc(db, "usuarios", user.uid, "panales", id));
     } catch (error) {
       console.error("Error al borrar pañal:", error);
     }
   };
 
-  const handleChangeFecha = (fecha) => setFechaSeleccionada(fecha);
+  const handleChangeFecha = (fecha) => {
+    setFechaSeleccionada(fecha);
+  };
 
   const handleEditClick = (session) => {
     setEditingId(session.id);
-    setEditValues({ duration: session.duration, side: session.side, note: session.note || "" });
+    setEditValues({
+      duration: session.duration,
+      side: session.side,
+      note: session.note || ""
+    });
   };
 
   const handleEditChange = (e) => {
@@ -179,9 +206,9 @@ const Home = () => {
   };
 
   const handleEditSave = async (id) => {
-    if (!user || !bebeId) return;
+    if (!user) return;
     try {
-      const ref = doc(db, "bebes", bebeId, "tomas", id);
+      const ref = doc(db, "usuarios", user.uid, "tomas", id);
       await updateDoc(ref, {
         duration: Number(editValues.duration),
         side: editValues.side,
@@ -207,172 +234,231 @@ const Home = () => {
     tomasDelDia.length > 0
       ? formatTime(
           Math.floor(
-            tomasDelDia.reduce((acc, cur) => acc + (cur.duration || 0), 0) / tomasDelDia.length
+            tomasDelDia.reduce((acc, cur) => acc + (cur.duration || 0), 0) /
+              tomasDelDia.length
           )
         )
       : "00:00";
 
-  if (!bebeId) {
-    return <RegistroBebe user={user} onRegistro={(id) => setBebeId(id)} />;
-  }
-
   return (
     <div className="p-4 max-w-md mx-auto text-center pb-24 relative">
-      <h2 className="text-xl font-semibold">¡Hola, {displayName}!</h2>
-      {photoURL && <img src={photoURL} alt="Perfil" className="w-16 h-16 rounded-full mx-auto my-2" />}
-      <div className="text-2xl font-bold mt-4">Registrar toma 🍼</div>
-      <div className="text-4xl my-2">{formatTime(time)}</div>
-      <div className="space-x-2">
-        <button onClick={handleStartStop} className="bg-pink-500 text-white px-4 py-2 rounded">
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded hover:bg-pink-200"
+      >
+        Cerrar sesión
+      </button>
+
+      <div className="flex items-center justify-center gap-3 mt-2 mb-4">
+        {photoURL && (
+          <img
+            src={photoURL}
+            alt="Foto de perfil"
+            className="w-10 h-10 rounded-full border-2 border-pink-300"
+          />
+        )}
+        <span className="text-sm text-gray-700 font-medium">
+          ¡Hola, {displayName}!
+        </span>
+      </div>
+
+      <h1 className="text-2xl font-bold text-pink-600 mb-4">Registrar toma 🍼</h1>
+
+      <div className="text-4xl font-mono mb-4">{formatTime(time)}</div>
+
+      <div className="flex justify-center gap-4 mb-4">
+        <button
+          onClick={handleStartStop}
+          className="px-4 py-2 bg-pink-500 text-white rounded-full"
+        >
           {running ? "Detener" : "Iniciar"}
         </button>
         <button
           onClick={() => {
-            setTime(0);
             setRunning(false);
+            setTime(0);
             setStartTime(null);
             localStorage.removeItem("lactiapp_toma");
           }}
-          className="bg-gray-300 px-4 py-2 rounded"
+          className="px-4 py-2 bg-gray-300 text-black rounded-full"
         >
           Reiniciar
         </button>
       </div>
+
       <select
         value={side}
         onChange={(e) => setSide(e.target.value)}
-        className="mt-4 w-full border px-2 py-1 rounded"
+        className="w-full border rounded px-3 py-2 mb-2"
       >
         <option value="izquierdo">Izquierdo</option>
         <option value="derecho">Derecho</option>
+        <option value="ambos">Ambos</option>
       </select>
+
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Notas opcionales"
-        className="w-full border mt-2 px-2 py-1 rounded"
+        className="w-full border rounded px-3 py-2 mb-4"
       />
-      <button onClick={handleSave} className="w-full mt-2 bg-green-400 text-white py-2 rounded">
+
+      <button
+        onClick={handleSave}
+        disabled={time === 0}
+        className="w-full bg-green-500 text-white py-2 rounded mb-6 disabled:opacity-50"
+      >
         Registrar toma
       </button>
+
       <button
-        onClick={() => setMostrarManual(!mostrarManual)}
-        className="w-full mt-2 bg-blue-200 py-2 rounded"
+        onClick={() => setMostrarManual(true)}
+        className="w-full bg-blue-200 text-blue-800 py-2 rounded mb-4"
       >
-        {mostrarManual ? "Ocultar registro manual" : "Registro manual"}
+        Registro manual
       </button>
-      {mostrarManual && (
-        <RegistroManual
-          user={user}
-          bebeId={bebeId}
-          onClose={() => setMostrarManual(false)}
-        />
-      )}
-      <button onClick={handleRegistrarPanial} className="w-full mt-2 bg-yellow-100 py-2 rounded">
+
+      <button
+        onClick={handleRegistrarPanial}
+        className="w-full bg-yellow-100 text-yellow-800 py-2 rounded mb-6 hover:bg-yellow-200"
+      >
         Registrar cambio de pañal 🧷
       </button>
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        <div className="bg-white border rounded p-2">
-          <div className="text-sm">Tomas de hoy</div>
-          <div className="text-xl font-bold">{tomasDelDia.length}</div>
-        </div>
-        <div className="bg-white border rounded p-2">
-          <div className="text-sm">Prom. Duración</div>
-          <div className="text-xl font-bold">{promedioDelDia}</div>
-        </div>
+
+      {mostrarManual && (
+        <RegistroManual user={user} onClose={() => setMostrarManual(false)} />
+      )}
+
+      <EstadisticasTexto sessions={sessions} />
+      <CalendarioTomas sessions={sessions} onChangeFecha={handleChangeFecha} />
+
+      <div className="text-sm text-left text-gray-700 mt-2 mb-4">
+        <p><strong>Tomas ese día:</strong> {tomasDelDia.length}</p>
+        <p><strong>Promedio:</strong> {promedioDelDia}</p>
       </div>
-      <EstadisticasTexto sesiones={tomasDelDia} panales={panalesDelDia} />
-      <GraficosEstadisticas sesiones={tomasDelDia} panales={panalesDelDia} />
-      <CalendarioTomas
-        onFechaSeleccionada={handleChangeFecha}
-        fechaSeleccionada={fechaSeleccionada}
+
+      <GraficosEstadisticas
+        sessions={sessions}
+        panales={panales}
+        fechaReferencia={fechaSeleccionada}
       />
-      <div className="mt-8 space-y-4">
-        <div className="text-lg font-bold">Historial del día</div>
-        {tomasDelDia.map((session) =>
-          editingId === session.id ? (
-            <div key={session.id} className="border rounded p-2 bg-yellow-50">
-              <input
-                type="number"
-                name="duration"
-                value={editValues.duration}
-                onChange={handleEditChange}
-                className="w-full border rounded px-2 py-1 mb-1"
-              />
-              <select
-                name="side"
-                value={editValues.side}
-                onChange={handleEditChange}
-                className="w-full border rounded px-2 py-1 mb-1"
-              >
-                <option value="izquierdo">Izquierdo</option>
-                <option value="derecho">Derecho</option>
-              </select>
-              <textarea
-                name="note"
-                value={editValues.note}
-                onChange={handleEditChange}
-                placeholder="Nota"
-                className="w-full border rounded px-2 py-1 mb-1"
-              />
-              <button
-                onClick={() => handleEditSave(session.id)}
-                className="bg-green-500 text-white px-2 py-1 rounded mr-2"
-              >
-                Guardar
-              </button>
-              <button
-                onClick={() => setEditingId(null)}
-                className="bg-gray-300 px-2 py-1 rounded"
-              >
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div key={session.id} className="border rounded p-2">
-              <div>
-                {formatTime(session.duration)} - {session.side}
-                {session.note && <span> - {session.note}</span>}
-              </div>
-              <div className="text-xs text-gray-500">
-                {new Date(session.timestamp?.seconds * 1000).toLocaleTimeString()}
-              </div>
-              <button
-                onClick={() => handleEditClick(session)}
-                className="text-blue-500 text-sm mr-2"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => handleDeleteToma(session.id)}
-                className="text-red-500 text-sm"
-              >
-                Eliminar
-              </button>
-            </div>
-          )
+
+      <div className="text-left mt-6">
+        <h2 className="text-lg font-semibold mb-2">
+          Historial del{" "}
+          {fechaSeleccionada.toLocaleDateString("es-PE", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
+        </h2>
+        {tomasDelDia.length === 0 ? (
+          <p className="text-gray-500">Aún no hay tomas registradas ese día.</p>
+        ) : (
+          <ul className="space-y-3">
+            {tomasDelDia.map((s) => (
+              <li key={s.id} className="bg-pink-50 p-3 rounded shadow-sm">
+                {editingId === s.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="number"
+                      name="duration"
+                      value={editValues.duration}
+                      onChange={handleEditChange}
+                      className="w-full border px-2 py-1 rounded"
+                      placeholder="Duración en segundos"
+                    />
+                    <select
+                      name="side"
+                      value={editValues.side}
+                      onChange={handleEditChange}
+                      className="w-full border px-2 py-1 rounded"
+                    >
+                      <option value="izquierdo">Izquierdo</option>
+                      <option value="derecho">Derecho</option>
+                      <option value="ambos">Ambos</option>
+                    </select>
+                    <textarea
+                      name="note"
+                      value={editValues.note}
+                      onChange={handleEditChange}
+                      className="w-full border px-2 py-1 rounded"
+                      placeholder="Nota"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditSave(s.id)}
+                        className="bg-green-500 text-white px-3 py-1 rounded"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="bg-gray-300 text-black px-3 py-1 rounded"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm font-bold">
+                      {new Date((s.timestamp?.seconds || 0) * 1000).toLocaleString()}
+                    </div>
+                    <div>
+                      ⏱️ {formatTime(s.duration)} – 🤱 {s.side}
+                    </div>
+                    {s.note && (
+                      <blockquote className="italic text-gray-600 border-l-4 pl-2 border-pink-300">
+                        “{s.note}”
+                      </blockquote>
+                    )}
+                    <div className="flex gap-4 mt-2">
+                      <button
+                        onClick={() => handleEditClick(s)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteToma(s.id)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        🗑️ Borrar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
-        {panalesDelDia.map((panial) => (
-          <div key={panial.id} className="border rounded p-2 bg-blue-50">
-            Cambio de pañal - {new Date(panial.timestamp?.seconds * 1000).toLocaleTimeString()}
-            <button
-              onClick={() => handleDeletePanial(panial.id)}
-              className="text-red-500 text-sm ml-2"
-            >
-              Eliminar
-            </button>
-          </div>
-        ))}
       </div>
-      <button
-        onClick={handleLogout}
-        className="absolute top-2 right-2 text-sm text-pink-500 border px-2 py-1 rounded"
-      >
-        Cerrar sesión
-      </button>
+
+      <div className="text-left mt-10">
+        <h2 className="text-lg font-semibold mb-2">Historial de pañales 🧷</h2>
+        {panalesDelDia.length === 0 ? (
+          <p className="text-gray-500">Aún no hay cambios de pañal ese día.</p>
+        ) : (
+          <ul className="space-y-3">
+            {panalesDelDia.map((p) => (
+              <li key={p.id} className="bg-yellow-50 p-3 rounded shadow-sm flex justify-between items-center">
+                <span>
+                  {new Date((p.timestamp?.seconds || 0) * 1000).toLocaleString()}
+                </span>
+                <button
+                  onClick={() => handleDeletePanial(p.id)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  🗑️ Borrar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };
 
 export default Home;
-
