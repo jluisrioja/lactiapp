@@ -4,5 +4,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/', // 👈 Rutas absolutas para producción en Vercel
-});
+  base: '/',
+  build: {
+    outDir: 'dist' // 👈 carpeta que Vercel usará como output
+  }
+})
